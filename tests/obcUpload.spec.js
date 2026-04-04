@@ -23,5 +23,5 @@ test('OBC Upload', async ({ page }) => {
 
 
   
-  await page.waitForTimeout(20000);
+  await page.waitForTimeout(15000);
 });
