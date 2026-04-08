@@ -1,5 +1,6 @@
 import { CollectionPage } from '../pages/collectionPage';
 import { test } from '@playwright/test';
+import { USERS, AMOUNTS } from '../config/testData.js';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -21,7 +22,7 @@ test.describe('Collection Flow', () => {
   });
 
   test('Fill Mobile Number', async () => {
-    await collectionPage.fillMobile();
+    await collectionPage.fillMobile(USERS.collection.mobile);
   });
 
   test('Click Submit Button', async () => {
@@ -29,7 +30,7 @@ test.describe('Collection Flow', () => {
   });
 
   test('Fill PIN', async () => {
-    await collectionPage.fillPin();
+    await collectionPage.fillPin(USERS.collection.pin);
   });
 
   test('Click Submit Button (PIN)', async () => {
@@ -42,11 +43,11 @@ test.describe('Collection Flow', () => {
   });
 
   test('Fill Cash Amount', async () => {
-    await collectionPage.fillCash('1');
+    await collectionPage.fillCash(AMOUNTS.cash);
   });
 
   test('Fill Cheque Amount', async () => {
-    await collectionPage.fillChequeAmount('2');
+    await collectionPage.fillChequeAmount(AMOUNTS.cheque);
   });
 
   test('Fill Cheque Reference Number', async () => {
@@ -57,8 +58,8 @@ test.describe('Collection Flow', () => {
     await collectionPage.clickChequeBankId();
   });
 
-  test('Select Bank of Baroda', async () => {
-    await collectionPage.selectBankOfBaroda();
+  test('Select Random Bank', async () => {
+    await collectionPage.selectRandomBank();
   });
 
   test('Click Cheque Due Date', async () => {
@@ -69,32 +70,12 @@ test.describe('Collection Flow', () => {
     await collectionPage.clickToday();
   });
 
-  test('Click Scan QR', async () => {
-    await collectionPage.clickScanQR();
-  });
-
-  test('Fill Amount', async () => {
-    await collectionPage.fillAmount();
-  });
-
-  test('Click Add Manually Here', async () => {
-    await collectionPage.clickAddManuallyHere();
-  });
-
-  test('Fill Reference Number', async () => {
-    await collectionPage.fillReferenceNumber();
-  });
-
-  test('Click Add Manually', async () => {
-    await collectionPage.clickAddManually();
-  });
-
-  test('Click Submit', async () => {
-    await collectionPage.clickSubmitDiv();
+  test('Handle UPI Flow', async () => {
+    await collectionPage.handleUPIFlow(AMOUNTS.qr);
   });
 
   test('Fill NEFT Amount', async () => {
-    await collectionPage.fillNeftAmount();
+    await collectionPage.fillNeftAmount(AMOUNTS.neft);
   });
 
   test('Fill NEFT Reference Number', async () => {
@@ -114,11 +95,15 @@ test.describe('Collection Flow', () => {
   });
 
   test('Click Final Submit', async () => {
-    await collectionPage.clickSubmitBtn2();
+    await collectionPage.clickFinalSubmit();
   });
 
   test('Click Submit Collection', async () => {
     await collectionPage.clickSubmitCollection();
+  });
+
+  test('Click Confirmation (No)', async () => {
+    await collectionPage.clickConfirmation();
     await page.waitForTimeout(5000);
   });
 
