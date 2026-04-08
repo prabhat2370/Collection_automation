@@ -1,6 +1,7 @@
 import { SegPage } from '../pages/segPage';
 import { LoginPage } from '../pages/LoginPage';
 import { test } from '@playwright/test';
+import { USERS } from '../config/testData.js';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -23,11 +24,11 @@ test.describe('Seg Flow', () => {
   });
 
   test('Fill Email', async () => {
-    await loginPage.emailInput.fill('seg4@ripplr.in');
+    await loginPage.emailInput.fill(USERS.seg.email);
   });
 
   test('Fill Password', async () => {
-    await loginPage.passwordInput.fill('Ripplr@123');
+    await loginPage.passwordInput.fill(USERS.seg.password);
   });
 
   test('Click Login Button', async () => {
@@ -75,7 +76,7 @@ test.describe('Seg Flow', () => {
     await segPage.scrollPage();
   });
 
-  test('Click "INVstore1bn" Checkbox', async () => {
+  test('Click "INVstore2zz" Checkbox', async () => {
     await segPage.clickCheckbox();
   });
 

@@ -1,3 +1,5 @@
+import { URLS, BANKS, CONFIRMATION } from '../config/testData.js';
+
 export class CollectionPage {
     constructor(page) {
         this.page = page;
@@ -10,7 +12,8 @@ export class CollectionPage {
         this.chequeAmount = this.page.locator('#chequeData\\[0\\]\\.amount');
         this.chequeRefNumber = this.page.locator('#chequeData\\[0\\]\\.reference_number');
         this.chequeBankId = this.page.locator('#chequeData\\[0\\]\\.bank_id');
-        this.bankOfBaroda = this.page.locator("//div[@title='Bank of Baroda']");
+        this.chequeBankFallback = this.page.locator("div.ant-select-selector").nth(0);
+        this.bankOfBaroda = (bankName) => this.page.locator(`//div[@title='${bankName}']`);
         this.chequeDueDate = this.page.locator('#chequeData\\[0\\]\\.due_date');
         this.todayLink = this.page.locator("//a[normalize-space()='Today']");
         this.scanQRBtn = this.page.locator('button').filter({ hasText: 'Scan QR' }).first();
@@ -18,35 +21,51 @@ export class CollectionPage {
         this.addManuallyHere = this.page.locator(":text-is('Add Manually here')");
         this.referenceNumberInput = this.page.locator("//input[@placeholder='Enter reference number(minimum 12 characters)']");
         this.addManually = this.page.locator(":text('Add manually')");
+        this.manualModeIcon = this.page.locator("//img[@alt='ManualMode']").first();
+        this.updateRefInput = this.page.locator("input[placeholder='Enter reference number(minimum 12 characters)']");
+        this.updateBtn = this.page.locator("//div[contains(text(),'Update')]");
         this.submitDiv = this.page.locator("//div[contains(text(),'Submit')]");
         this.neftAmount = this.page.locator("input[name='neftData[0].amount']");
         this.neftRefNumber = this.page.locator("[name='neftData[0].reference_number']");
         this.autoDiv = this.page.locator("//div[contains(text(),'Auto')]");
         this.splitReason = this.page.locator('#splitInvoices\\[0\\]\\.reason');
         this.shopClosedOption = this.page.locator("//div[contains(text(),'Shop Permanently Closed')]");
-        this.submitBtn2 = this.page.locator("button[type='submit']");
+        this.finalSubmitBtn = this.page.locator("button[type='submit']");
         this.submitCollection = this.page.locator(":text('Submit Collection')");
-        
+        this.confirmationBtn = (answer) => this.page.getByRole('button', { name: answer, exact: true });
     }
 
-    async navigate() { await this.page.goto('https://collection-preprod.ripplr.in/login'); }
-    async fillMobile() { await this.mobileInput.fill('9739492646'); }
-    async fillPin() { await this.pinInput.fill('1234'); }
+    async navigate() { await this.page.goto(URLS.collection); }
+    async fillMobile(mobile) { await this.mobileInput.fill(mobile); }
+    async fillPin(pin) { await this.pinInput.fill(pin); }
     async clickSubmit() { await this.submitBtn.click(); }
     async clickDownArrow() { await this.downArrow.click(); }
-    async clickCash() { await this.cash.click(); }
     async fillCash(amount) { await this.cash.fill(amount); }
     async fillChequeAmount(amount) { await this.chequeAmount.fill(amount); }
     async fillChequeRefNumber() {
         const refNumber = Math.floor(100000 + Math.random() * 900000).toString();
         await this.chequeRefNumber.fill(refNumber);
     }
-    async clickChequeBankId() { await this.chequeBankId.click(); }
-    async selectBankOfBaroda() { await this.bankOfBaroda.click(); }
+    async clickChequeBankId() {
+        const isInteractable = await this.chequeBankId.evaluate(el => {
+            const rect = el.getBoundingClientRect();
+            const topEl = document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2);
+            return el === topEl || el.contains(topEl);
+        });
+        if (isInteractable) {
+            await this.chequeBankId.click();
+        } else {
+            await this.chequeBankFallback.click();
+        }
+    }
+    async selectRandomBank() {
+        const randomBank = BANKS[Math.floor(Math.random() * BANKS.length)];
+        await this.bankOfBaroda(randomBank).click();
+    }
     async clickChequeDueDate() { await this.chequeDueDate.click(); }
     async clickToday() { await this.todayLink.click(); }
     async clickScanQR() { await this.scanQRBtn.click(); }
-    async fillAmount() { await this.amountInput.fill('3'); }
+    async fillAmount(amount) { await this.amountInput.fill(amount); }
     async clickAddManuallyHere() { await this.addManuallyHere.click(); }
     async fillReferenceNumber() {
         const refNumber = Math.floor(10000000000000 + Math.random() * 90000000000000).toString();
@@ -54,7 +73,32 @@ export class CollectionPage {
     }
     async clickAddManually() { await this.addManually.click(); }
     async clickSubmitDiv() { await this.submitDiv.click(); }
-    async fillNeftAmount() { await this.neftAmount.fill('4'); }
+
+    async handleUPIFlow(amount) {
+        // Check if UPI row already has a saved entry by looking for the ManualMode icon inside UPI section
+        const upiManualIcon = this.page.locator("//img[@alt='ManualMode']");
+        const iconCount = await upiManualIcon.count();
+        const upiAlreadyAdded = iconCount > 0;
+
+        if (upiAlreadyAdded) {
+            await upiManualIcon.first().click();
+            await this.amountInput.first().clear();
+            await this.amountInput.first().fill(amount);
+            const refNumber = Math.floor(10000000000000 + Math.random() * 90000000000000).toString();
+            await this.updateRefInput.first().clear();
+            await this.updateRefInput.first().fill(refNumber);
+            await this.updateBtn.click();
+        } else {
+            await this.scanQRBtn.click();
+            await this.amountInput.fill(amount);
+            await this.addManuallyHere.click();
+            const refNumber = Math.floor(10000000000000 + Math.random() * 90000000000000).toString();
+            await this.referenceNumberInput.fill(refNumber);
+            await this.addManually.click();
+            await this.submitDiv.click();
+        }
+    }
+    async fillNeftAmount(amount) { await this.neftAmount.fill(amount); }
     async fillNeftRefNumber() {
         const refNumber = Math.floor(100000000000 + Math.random() * 900000000000).toString();
         await this.neftRefNumber.fill(refNumber);
@@ -62,7 +106,8 @@ export class CollectionPage {
     async clickAuto() { await this.autoDiv.click(); }
     async clickSplitReason() { await this.splitReason.click(); }
     async selectShopClosed() { await this.shopClosedOption.click(); }
-    async clickSubmitBtn2() { await this.submitBtn2.click(); }
+    async clickFinalSubmit() { await this.finalSubmitBtn.click(); }
     async clickSubmitCollection() { await this.submitCollection.click(); }
+    async clickConfirmation() { await this.confirmationBtn(CONFIRMATION.submitCollection).click(); }
 
 }

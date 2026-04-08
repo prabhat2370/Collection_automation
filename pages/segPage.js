@@ -1,17 +1,22 @@
+import { SEG } from '../config/testData.js';
+import { firstOBCData } from '../utils/excelReader.js';
+
 export class SegPage {
     constructor(page) {
         this.page = page;
 
+        const { invoiceNo, salesman } = firstOBCData;
+
         this.allocationLink = this.page.getByRole('link', { name: 'Allocation' });
         this.fcDropdown = this.page.locator('#rc_select_0');
-        this.selectedFC = this.page.getByText('BTML: BTM');
+        this.selectedFC = this.page.getByText(SEG.fc);
         this.brandDropdown = this.page.locator('#rc_select_1');
-        this.selectedBrand = this.page.getByText('BRIT: Britannia');
+        this.selectedBrand = this.page.getByText(SEG.brand);
         this.continueBtn = this.page.getByRole('button', { name: 'Continue' });
         this.salesmanDropdown = this.page.locator('#rc_select_3');
-        this.selectedSalesman = this.page.getByText('Abdul -');
+        this.selectedSalesman = this.page.getByText(salesman);
         this.searchBtn = this.page.getByRole('button', { name: 'Click here to Search' });
-        this.InvCheckbox = this.page.locator(`//tr[td[6][contains(., 'INVstore2zz')]]//td[1]//input[@type='checkbox']`);
+        this.InvCheckbox = this.page.locator(`//tr[td[6][contains(., '${invoiceNo}')]]//td[1]//input[@type='checkbox']`);
         this.assignBtn = this.page.getByText('Assign', { exact: true });
         this.submitBtn = this.page.getByRole('button', { name: 'Submit' });
     }
