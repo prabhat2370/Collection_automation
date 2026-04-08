@@ -71,4 +71,21 @@ test.describe('Seg Flow', () => {
     await page.waitForTimeout(5000);
   });
 
+  test('Scroll Page', async () => {
+    await segPage.scrollPage();
+  });
+
+  test('Click "INVstore1bn" Checkbox', async () => {
+    await segPage.clickCheckbox();
+  });
+
+  test('Click Assign', async () => {
+    await segPage.clickAssign();
+  });
+
+  test('Click Submit', async () => {
+    await segPage.clickSubmit();
+    await page.waitForTimeout(5000);
+  });
+
 });
