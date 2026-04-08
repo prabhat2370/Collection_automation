@@ -2,13 +2,23 @@
   "name": "collection_auto",
   "version": "1.0.0",
   "main": "index.js",
-  "scripts": {},
+  "type": "module",
+  "scripts": {
+    "smoke": "npx playwright test tests/obcUpload.spec.js tests/seg.spec.js --headed",
+    "smoke:obc": "npx playwright test tests/obcUpload.spec.js --headed",
+    "smoke:seg": "npx playwright test tests/seg.spec.js --headed",
+    "allure:generate": "allure generate allure-results --clean -o allure-report",
+    "allure:open": "allure open allure-report",
+    "allure:report": "npm run allure:generate && npm run allure:open"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "devDependencies": {
     "@playwright/test": "^1.59.0",
-    "@types/node": "^25.5.0"
+    "@types/node": "^25.5.0",
+    "allure-commandline": "^2.38.1",
+    "allure-playwright": "^3.7.0"
   }
 }

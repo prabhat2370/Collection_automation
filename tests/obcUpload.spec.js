@@ -1,27 +1,115 @@
 import { obcUpload } from '../pages/obcUpload';
 import { LoginPage } from '../pages/LoginPage';
-import { test, expect } from '@playwright/test';
+import { test } from '@playwright/test';
 
+test.describe.configure({ mode: 'serial' });
 
-test('OBC Upload', async ({ page }) => {
+test.describe('OBC Upload', () => {
 
-  const loginPage = new LoginPage(page);
-  console.log("Step 1: Open Login Page");
-  await loginPage.navigate();
-  console.log("Step 2: Perform Login");
-  await loginPage.login(
-    'admin@ripplr.in',
-    'M@ver!ck'
-  );
-  
-  
-  const obcupload = new obcUpload(page);
-
-  console.log("Step 1: Open Adaptor Upload");
+  let page, loginPage, obcupload;
   const filePath = 'C:\\Users\\User\\Downloads\\preprodobc 2.xlsx';
-  await obcupload.Upload(filePath);
 
+  test.beforeAll(async ({ browser }) => {
+    page = await browser.newPage();
+    loginPage = new LoginPage(page);
+    obcupload = new obcUpload(page);
+  });
 
-  
-  await page.waitForTimeout(15000);
+  test.afterAll(async () => {
+    await page.close();
+  });
+
+  test('Open Login Page', async () => {
+    await loginPage.navigate();
+  });
+
+  test('Fill Email', async () => {
+    await loginPage.emailInput.fill('admin@ripplr.in');
+  });
+
+  test('Fill Password', async () => {
+    await loginPage.passwordInput.fill('M@ver!ck');
+  });
+
+  test('Click Login Button', async () => {
+    await loginPage.loginBtn.click();
+  });
+
+  test('Click Adapter Uploads', async () => {
+    await obcupload.clickAdapterUploads();
+  });
+
+  test('Click Upload Button', async () => {
+    await obcupload.clickUpload();
+  });
+
+  test('Click Upload Type Dropdown', async () => {
+    await obcupload.clickUploadTypeDropdown();
+  });
+
+  test('Select OBC', async () => {
+    await obcupload.selectOBC();
+  });
+
+  test('Click FC Dropdown', async () => {
+    await obcupload.clickFCDropdown();
+  });
+
+  test('Type BTM', async () => {
+    await obcupload.typeBTM();
+  });
+
+  test('Select BTM', async () => {
+    await obcupload.selectBTM();
+  });
+
+  test('Click Brand Dropdown', async () => {
+    await obcupload.clickBrandDropdown();
+  });
+
+  test('Type BRIT', async () => {
+    await obcupload.typeBRIT();
+  });
+
+  test('Select Britannia', async () => {
+    await obcupload.selectBritannia();
+  });
+
+  test('Upload File', async () => {
+    await obcupload.uploadFileAction(filePath);
+  });
+
+  test('Click Submit', async () => {
+    await obcupload.clickSubmit();
+  });
+
+  test('Click Select File Type Dropdown', async () => {
+    await obcupload.clickSelectFileTypeDropdown();
+  });
+
+  test('Click OBC Option', async () => {
+    await obcupload.clickOBCOption();
+  });
+
+  test('Click Search (1st)', async () => {
+    await obcupload.clickSearch();
+  });
+
+  test('Wait 5 Seconds', async () => {
+    await page.waitForTimeout(5000);
+  });
+
+  test('Click Search (2nd)', async () => {
+    await obcupload.clickSearch();
+  });
+
+  test('Click Status Icon', async () => {
+    await obcupload.clickStatusIcon();
+  });
+
+  test('Click Close Button', async () => {
+    await obcupload.clickClose();
+    await page.waitForTimeout(5000);
+  });
+
 });
