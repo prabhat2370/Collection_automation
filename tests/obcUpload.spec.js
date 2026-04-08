@@ -95,8 +95,8 @@ test.describe('OBC Upload', () => {
     await obcupload.clickSearch();
   });
 
-  test('Wait 5 Seconds', async () => {
-    await page.waitForTimeout(5000);
+  test('Wait 6 Seconds', async () => {
+    await page.waitForTimeout(6000);
   });
 
   test('Click Search (2nd)', async () => {

@@ -11,6 +11,9 @@ export class SegPage {
         this.salesmanDropdown = this.page.locator('#rc_select_3');
         this.selectedSalesman = this.page.getByText('Abdul -');
         this.searchBtn = this.page.getByRole('button', { name: 'Click here to Search' });
+        this.InvCheckbox = this.page.locator(`//tr[td[6][contains(., 'INVstore2zz')]]//td[1]//input[@type='checkbox']`);
+        this.assignBtn = this.page.getByText('Assign', { exact: true });
+        this.submitBtn = this.page.getByRole('button', { name: 'Submit' });
     }
 
     async clickAllocationLink() { await this.allocationLink.click(); }
@@ -22,4 +25,8 @@ export class SegPage {
     async clickSalesmanDropdown() { await this.salesmanDropdown.click(); }
     async selectAbdul() { await this.selectedSalesman.click(); }
     async clickSearch() { await this.searchBtn.click(); }
+    async scrollPage() { await this.InvCheckbox.scrollIntoViewIfNeeded(); }
+    async clickCheckbox() { await this.InvCheckbox.click(); }
+    async clickAssign() { await this.assignBtn.click(); }
+    async clickSubmit() { await this.submitBtn.click(); }
 }
