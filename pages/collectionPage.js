@@ -1,4 +1,14 @@
 import { URLS, BANKS, CONFIRMATION } from '../config/testData.js';
+import { writeFileSync, existsSync, readFileSync } from 'fs';
+import { resolve } from 'path';
+
+const TEMP_FILE = resolve(process.cwd(), 'utils/collectionRefs.json');
+
+function saveRef(key, data) {
+    const existing = existsSync(TEMP_FILE) ? JSON.parse(readFileSync(TEMP_FILE)) : {};
+    existing[key] = data;
+    writeFileSync(TEMP_FILE, JSON.stringify(existing, null, 2));
+}
 
 export class CollectionPage {
     constructor(page) {
@@ -87,6 +97,7 @@ export class CollectionPage {
             const refNumber = Math.floor(10000000000000 + Math.random() * 90000000000000).toString();
             await this.updateRefInput.first().clear();
             await this.updateRefInput.first().fill(refNumber);
+            saveRef('upi', { refNumber, amount });
             await this.updateBtn.click();
         } else {
             await this.scanQRBtn.click();
@@ -94,14 +105,16 @@ export class CollectionPage {
             await this.addManuallyHere.click();
             const refNumber = Math.floor(10000000000000 + Math.random() * 90000000000000).toString();
             await this.referenceNumberInput.fill(refNumber);
+            saveRef('upi', { refNumber, amount });
             await this.addManually.click();
             await this.submitDiv.click();
         }
     }
     async fillNeftAmount(amount) { await this.neftAmount.fill(amount); }
-    async fillNeftRefNumber() {
+    async fillNeftRefNumber(amount) {
         const refNumber = Math.floor(100000000000 + Math.random() * 900000000000).toString();
         await this.neftRefNumber.fill(refNumber);
+        saveRef('neft', { refNumber, amount });
     }
     async clickAuto() { await this.autoDiv.click(); }
     async clickSplitReason() { await this.splitReason.click(); }
