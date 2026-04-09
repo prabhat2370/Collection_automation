@@ -34,7 +34,7 @@ export const BANKS = [
 ];
 
 export const CONFIRMATION = {
-    submitCollection: 'No',
+    submitCollection: 'Yes',
 };
 
 export const AMOUNTS = {
@@ -47,6 +47,7 @@ export const AMOUNTS = {
 export const SEG = {
     fc: 'BTML: BTM',
     brand: 'BRIT: Britannia',
+    verificationMode: 'V', // 'V' = Verification, 'R' = Rejection
 };
 
 export const OBC = {
