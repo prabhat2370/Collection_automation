@@ -79,7 +79,7 @@ test.describe('Collection Flow', () => {
   });
 
   test('Fill NEFT Reference Number', async () => {
-    await collectionPage.fillNeftRefNumber();
+    await collectionPage.fillNeftRefNumber(AMOUNTS.neft);
   });
 
   test('Click Auto', async () => {

@@ -16,6 +16,10 @@ export const USERS = {
         mobile: '9739492646',
         pin: '1234',
     },
+    cash: {
+        email: 'cash4@ripplr.in',
+        password: 'Ripplr@123',
+    },
 };
 
 export const FILE_PATHS = {
@@ -38,10 +42,10 @@ export const CONFIRMATION = {
 };
 
 export const AMOUNTS = {
-    cash: '2',
+    cash: '1',
     cheque: '2',
-    qr: '2',
-    neft: '2',
+    qr: '3',
+    neft: '4',
 };
 
 export const SEG = {
@@ -53,4 +57,12 @@ export const SEG = {
 export const OBC = {
     fc: 'BTML: BTM',
     brand: 'BRIT: Britannia',
+};
+
+// V = Verify, R = Reject, NA = Neglect/Ignore (skip)
+export const PAYMENT_MODES = {
+    cash: 'NA',
+    cheque: 'NA',
+    upi: 'NA',
+    neft: 'NA',
 };
