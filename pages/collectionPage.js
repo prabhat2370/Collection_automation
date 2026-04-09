@@ -4,9 +4,6 @@ import { resolve } from 'path';
 
 const TEMP_FILE = resolve(process.cwd(), 'utils/collectionRefs.json');
 
-// Clear file at module load time so each collection run starts fresh
-writeFileSync(TEMP_FILE, JSON.stringify({}));
-
 function saveRef(key, data) {
     const existing = existsSync(TEMP_FILE) ? JSON.parse(readFileSync(TEMP_FILE)) : {};
     existing[key] = data;
