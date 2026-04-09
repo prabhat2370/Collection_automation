@@ -24,6 +24,9 @@ export const USERS = {
 
 export const FILE_PATHS = {
     obcFile: 'C:\\Users\\User\\Downloads\\preprodobc 2.xlsx',
+    soReport: 'C:\\Users\\User\\Downloads\\m1 6.csv',
+    invoiceReport: 'C:\\Users\\User\\Downloads\\h1 6.csv',
+    salesRegister: 'C:\\Users\\User\\Downloads\\sr 10.csv',
 };
 
 export const BANKS = [
