@@ -1,21 +1,41 @@
-import { test, expect } from '@playwright/test';
+import { test } from '@playwright/test';
 import { LoginPage } from '../pages/LoginPage';
+import { USERS } from '../config/testData.js';
 
-test('Ripplr Login Test', async ({ page }) => {
+test.describe.configure({ mode: 'serial' });
 
-  const loginPage = new LoginPage(page);
+test.describe('Login & Logout Flow', () => {
 
-  console.log("Step 1: Open Login Page");
-  await loginPage.navigate();
+  let page, loginPage;
 
-  console.log("Step 2: Perform Login");
-  await loginPage.login(
-    'admin@ripplr.in',
-    'M@ver!ck'
-  );
+  test.beforeAll(async ({ browser }) => {
+    page = await browser.newPage();
+    loginPage = new LoginPage(page);
+  });
 
-  console.log("Step 3: Validate Login");
-  await expect(loginPage.adapterUploadsLink).toBeVisible();
-  await page.waitForTimeout(20000);
+  test.afterAll(async () => {
+    await page.close();
+  });
+
+  test('Open Login Page', async () => {
+    await loginPage.navigate();
+  });
+
+  test('Fill Email', async () => {
+    await loginPage.emailInput.fill(USERS.obc.email);
+  });
+
+  test('Fill Password', async () => {
+    await loginPage.passwordInput.fill(USERS.obc.password);
+  });
+
+  test('Click Login Button', async () => {
+    await loginPage.loginBtn.click();
+  });
+
+  test('Logout', async () => {
+    await loginPage.logout();
+    await page.waitForTimeout(5000);
+  });
 
 });

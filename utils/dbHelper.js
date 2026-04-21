@@ -47,6 +47,151 @@ function createSSHTunnel() {
     });
 }
 
+// ─── OBC Elimination Helpers ──────────────────────────────────────────────────
+
+/**
+ * Returns up to `limit` Bill Back invoices for the given FC+Brand.
+ * collected_amount = 0 ensures a clean invoice with no prior collections —
+ * makes before/after balance assertions unambiguous.
+ */
+export async function getBillBackInvoices(fcId, brandId, limit = 5) {
+    const sql = `
+        SELECT *
+        FROM ChampOutstandingInvoices
+        WHERE fc_id = ? AND brand_id = ?
+          AND bill_status IN ('Bill Back')
+          AND collected_amount = 0
+        ORDER BY id DESC
+        LIMIT ${Number(limit)}
+    `;
+    return runQuery(sql, [fcId, brandId]);
+}
+
+/**
+ * Returns the ChampFcBrands row for the given fc+brand.
+ * Key columns: obc_adjustment_date, invoice_threshold_date
+ */
+export async function getChampFcBrandsConfig(fcId, brandId) {
+    const sql = `
+        SELECT obc_adjustment_date, invoice_threshold_date
+        FROM ChampFcBrands
+        WHERE fc_id = ? AND brand_id = ?
+        LIMIT 1
+    `;
+    const rows = await runQuery(sql, [fcId, brandId]);
+    return rows[0] ?? null;
+}
+
+/**
+ * Returns the most recent Orders row for a given invoice_no (all columns).
+ * Used to check TC 007/008 (invoice_date vs invoice_threshold_date boundary).
+ * Query: SELECT * FROM Orders WHERE invoice_no = ?
+ */
+export async function getInvoiceDateFromOrders(invoiceNo) {
+    const sql = `
+        SELECT *
+        FROM Orders
+        WHERE invoice_no = ?
+        ORDER BY id DESC
+        LIMIT 1
+    `;
+    const rows = await runQuery(sql, [invoiceNo]);
+    return rows[0]?.invoice_date ?? null;
+}
+
+/**
+ * Returns the most recent obc_adjustment_data row for the given invoice.
+ * Actual columns from schema: brand_id, fc_id, adjusted_bill_no, adjusted_amount,
+ * type, unique_key_hash, file_id, credit_note_no, created_at
+ */
+export async function getObcAdjustmentEntry(brandId, fcId, invoiceNo, adjustedAmount) {
+    const sql = `
+        SELECT *
+        FROM obc_adjustment_data
+        WHERE brand_id = ?
+          AND fc_id = ?
+          AND adjusted_bill_no = ?
+          AND adjusted_amount = ?
+        ORDER BY id DESC
+        LIMIT 1
+    `;
+    const rows = await runQuery(sql, [brandId, fcId, invoiceNo, adjustedAmount]);
+    return rows[0] ?? null;
+}
+
+/**
+ * Returns the most recent collection_invoices row for a given invoice_no.
+ * ORDER BY id DESC so we always get the new OBC entry, not an older one.
+ */
+export async function getCollectionInvoiceEntry(invoiceNo) {
+    const sql = `
+        SELECT *
+        FROM collection_invoices
+        WHERE invoice_no = ?
+        ORDER BY id DESC
+        LIMIT 1
+    `;
+    const rows = await runQuery(sql, [invoiceNo]);
+    return rows[0] ?? null;
+}
+
+/**
+ * Returns all payments rows for a given collection_invoice_id.
+ * Used to verify the payment entry created by OBC Elimination.
+ * Query: SELECT * FROM payments WHERE collection_invoice_id = ?
+ */
+export async function getPaymentsByCollectionInvoiceId(collectionInvoiceId) {
+    const sql = `
+        SELECT *
+        FROM payments
+        WHERE collection_invoice_id = ?
+    `;
+    return runQuery(sql, [collectionInvoiceId]);
+}
+
+/**
+ * Returns the ChampOutstandingInvoices row for the given invoice_no in the given FC+Brand.
+ * Used to check the outstanding balance before and after upload.
+ */
+export async function getChampOutstandingInvoice(invoiceNo, fcId, brandId) {
+    const sql = `
+        SELECT *
+        FROM ChampOutstandingInvoices
+        WHERE invoice_no = ?
+          AND fc_id = ?
+          AND brand_id = ?
+        LIMIT 1
+    `;
+    const rows = await runQuery(sql, [invoiceNo, fcId, brandId]);
+    return rows[0] ?? null;
+}
+
+/**
+ * Deletes obc_adjustment_data entries for the given invoice+amount combination.
+ * Used as cleanup before re-running the happy-path test.
+ */
+export async function deleteObcAdjustmentEntries(brandId, fcId, invoiceNo, adjustedAmount) {
+    const sql = `
+        DELETE FROM obc_adjustment_data
+        WHERE brand_id = ?
+          AND fc_id = ?
+          AND adjusted_bill_no = ?
+          AND adjusted_amount = ?
+    `;
+    return runQuery(sql, [brandId, fcId, invoiceNo, adjustedAmount]);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function subtractCollectionDate(invoiceNo) {
+    const sql = `
+        UPDATE collection_invoices
+        SET collection_date = DATE_SUB(collection_date, INTERVAL 1 DAY)
+        WHERE invoice_no = ?
+    `;
+    return runQuery(sql, [invoiceNo]);
+}
+
 export async function insertBankStatement(paymentMode, refNumber, amount) {
     const sql = `
         INSERT INTO bank_statement_api (

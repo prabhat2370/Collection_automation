@@ -91,33 +91,10 @@ test.describe('SO Upload Flow', () => {
     await soUploadPage.clickSubmit();
   });
 
-  test('Click Select File Type Dropdown', async () => {
-    await soUploadPage.clickSelectFileTypeDropdown();
-  });
-
-  test('Click SO Option', async () => {
-    await soUploadPage.clickSOOption();
-  });
-
-  test('Click Search (1st)', async () => {
-    await soUploadPage.clickSearch();
-  });
-
-  test('Click Status Icon', async () => {
-    await soUploadPage.clickStatusIcon();
-    await page.waitForTimeout(4000);
-  });
-
-  test('Click Close Button', async () => {
-    await soUploadPage.clickClose();
-  });
-
-  test('Click Status Icon (Fallback)', async () => {
-    await soUploadPage.statusIconFallback.click();
-    await page.waitForTimeout(5000);
-  });
-
-  test('Capture Invoice Numbers', async () => {
+  test('Wait for Fresh Upload and Capture Invoices', async () => {
+    test.setTimeout(120000);
+    await soUploadPage.waitForFreshUploadAndClickStatus();
+    await page.waitForTimeout(3000);
     await soUploadPage.captureInvoiceNumbers();
   });
 

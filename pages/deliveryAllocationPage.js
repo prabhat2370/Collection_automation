@@ -1,4 +1,5 @@
 import { readFileSync } from 'fs';
+import { DELIVERY } from '../config/testData.js';
 import { resolve } from 'path';
 
 const SO_INVOICES_FILE = resolve(process.cwd(), 'utils/soInvoices.json');
@@ -52,10 +53,10 @@ export class DeliveryAllocationPage {
         await this.page.locator("//div[@title='Adhoc']").click();
         await this.page.locator("div[name='allocation_type'] span[class='ant-select-selection-search']").click();
         await this.page.locator("//div[@title='Eco']").click();
-        await this.page.locator("//input[@id='vehicle_no']").fill('TN09TN9090');
-        await this.page.locator("//input[@id='driver_name']").fill('Test Driver');
-        await this.page.locator("//input[@id='vendor']").fill('Test Vendor');
-        await this.page.locator("//input[@id='driver_mobile']").fill('8303111111');
+        await this.page.locator("//input[@id='vehicle_no']").fill(DELIVERY.vehicleNo);
+        await this.page.locator("//input[@id='driver_name']").fill(DELIVERY.driverName);
+        await this.page.locator("//input[@id='vendor']").fill(DELIVERY.vendor);
+        await this.page.locator("//input[@id='driver_mobile']").fill(DELIVERY.driverMobile);
         await this.page.locator("div[name='delivery_boy'] span[class='ant-select-selection-search']").click();
         await this.page.locator("//div[@title='Delivery Boy']").click();
     }
