@@ -43,42 +43,52 @@ test.describe('Collection Flow', () => {
   });
 
   test('Fill Cash Amount', async () => {
+    test.skip(!AMOUNTS.cash, 'No cash amount set — skipping');
     await collectionPage.fillCash(AMOUNTS.cash);
   });
 
   test('Fill Cheque Amount', async () => {
+    test.skip(!AMOUNTS.cheque, 'No cheque amount set — skipping');
     await collectionPage.fillChequeAmount(AMOUNTS.cheque);
   });
 
   test('Fill Cheque Reference Number', async () => {
-    await collectionPage.fillChequeRefNumber();
+    test.skip(!AMOUNTS.cheque, 'No cheque amount set — skipping');
+    await collectionPage.fillChequeRefNumber(AMOUNTS.cheque);
   });
 
   test('Click Cheque Bank Dropdown', async () => {
+    test.skip(!AMOUNTS.cheque, 'No cheque amount set — skipping');
     await collectionPage.clickChequeBankId();
   });
 
   test('Select Random Bank', async () => {
+    test.skip(!AMOUNTS.cheque, 'No cheque amount set — skipping');
     await collectionPage.selectRandomBank();
   });
 
   test('Click Cheque Due Date', async () => {
+    test.skip(!AMOUNTS.cheque, 'No cheque amount set — skipping');
     await collectionPage.clickChequeDueDate();
   });
 
   test('Select Today', async () => {
+    test.skip(!AMOUNTS.cheque, 'No cheque amount set — skipping');
     await collectionPage.clickToday();
   });
 
   test('Handle UPI Flow', async () => {
+    test.skip(!AMOUNTS.qr, 'No QR/UPI amount set — skipping');
     await collectionPage.handleUPIFlow(AMOUNTS.qr);
   });
 
   test('Fill NEFT Amount', async () => {
+    test.skip(!AMOUNTS.neft, 'No NEFT amount set — skipping');
     await collectionPage.fillNeftAmount(AMOUNTS.neft);
   });
 
   test('Fill NEFT Reference Number', async () => {
+    test.skip(!AMOUNTS.neft, 'No NEFT amount set — skipping');
     await collectionPage.fillNeftRefNumber(AMOUNTS.neft);
   });
 

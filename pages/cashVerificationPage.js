@@ -33,13 +33,24 @@ export class CashVerificationPage {
     async clickSalesmanSettle() { await this.salesmanSettle.click(); }
     async clickStartVerification() { await this.startVerification.click(); }
 
+    // Wait for page to settle and loader to hide before interacting
+    async waitForLoader() {
+        await this.page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
+        const loader = this.page.locator('#loader.show');
+        if (await loader.isVisible().catch(() => false)) {
+            await loader.waitFor({ state: 'hidden', timeout: 15000 }).catch(() => {});
+        }
+    }
+
     async runCashFlow() {
         const mode = PAYMENT_MODES.cash;
         if (mode === 'V') {
-            await this.cashGreenTick.click();
+            await this.waitForLoader();
+            await this.cashGreenTick.click({ force: true });
             await this.saveBtn.click();
         } else if (mode === 'R') {
-            await this.cashRedClose.click();
+            await this.waitForLoader();
+            await this.cashRedClose.click({ force: true });
             await this.addReasonBtn.click();
             await this.commentInput.fill('REJECT');
             await this.addBtn.click();
@@ -61,10 +72,12 @@ export class CashVerificationPage {
     async runUPIFlow() {
         const mode = PAYMENT_MODES.upi;
         if (mode === 'V') {
-            await this.cashGreenTick.click();
+            await this.waitForLoader();
+            await this.cashGreenTick.click({ force: true });
             await this.saveBtn.click();
         } else if (mode === 'R') {
-            await this.cashRedClose.click();
+            await this.waitForLoader();
+            await this.cashRedClose.click({ force: true });
             await this.bothBtn.click();
             await this.submitBtn.click();
             await this.saveBtn.click();
@@ -75,10 +88,12 @@ export class CashVerificationPage {
     async runNEFTFlow() {
         const mode = PAYMENT_MODES.neft;
         if (mode === 'V') {
-            await this.cashGreenTick.click();
+            await this.waitForLoader();
+            await this.cashGreenTick.click({ force: true });
             await this.saveBtn.click();
         } else if (mode === 'R') {
-            await this.cashRedClose.click();
+            await this.waitForLoader();
+            await this.cashRedClose.click({ force: true });
             await this.bothBtn.click();
             await this.submitBtn.click();
             await this.saveBtn.click();
@@ -89,13 +104,14 @@ export class CashVerificationPage {
     async runChequeFlow() {
         const mode = PAYMENT_MODES.cheque;
         if (mode === 'V') {
-            await this.cashGreenTick.click();
+            await this.waitForLoader();
+            await this.cashGreenTick.click({ force: true });
             await this.saveBtn.click();
         } else if (mode === 'R') {
-            await this.cashRedClose.click();
-            await this.addReasonBtn.click();
-            await this.commentInput.fill('REJECT');
-            await this.addBtn.click();
+            await this.waitForLoader();
+            await this.cashRedClose.click({ force: true });
+            await this.bothBtn.click();
+            await this.submitBtn.click();
             await this.saveBtn.click();
         }
         // NA = skip

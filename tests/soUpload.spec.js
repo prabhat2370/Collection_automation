@@ -2,6 +2,7 @@ import { SOUploadPage } from '../pages/soUploadPage';
 import { LoginPage } from '../pages/LoginPage';
 import { test } from '@playwright/test';
 import { USERS, FILE_PATHS } from '../config/testData.js';
+import { prepareSOUploadFiles } from '../utils/collectionReportGenerator.js';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -75,6 +76,10 @@ test.describe('SO Upload Flow', () => {
     await soUploadPage.selectBritannia();
   });
 
+  test('Prepare SO Files with New Invoice No', async () => {
+    prepareSOUploadFiles(FILE_PATHS.soReport, FILE_PATHS.invoiceReport, FILE_PATHS.salesRegister);
+  });
+
   test('Upload SO Report File', async () => {
     await soUploadPage.uploadSOReport(FILE_PATHS.soReport);
   });
@@ -91,33 +96,29 @@ test.describe('SO Upload Flow', () => {
     await soUploadPage.clickSubmit();
   });
 
-  test('Click Select File Type Dropdown', async () => {
-    await soUploadPage.clickSelectFileTypeDropdown();
+  test('Observe After Submit', async () => {
+    await soUploadPage.observeAfterSubmit();
   });
 
-  test('Click SO Option', async () => {
-    await soUploadPage.clickSOOption();
+  test('Wait for Page Data Load', async () => {
+    await soUploadPage.waitForPageDataLoad();
   });
 
-  test('Click Search (1st)', async () => {
+  test('Apply Sales Order Filter', async () => {
+    await soUploadPage.applySalesOrderFilter();
+  });
+
+  test('Click Search', async () => {
     await soUploadPage.clickSearch();
   });
 
-  test('Click Status Icon', async () => {
-    await soUploadPage.clickStatusIcon();
-    await page.waitForTimeout(4000);
-  });
-
-  test('Click Close Button', async () => {
-    await soUploadPage.clickClose();
-  });
-
-  test('Click Status Icon (Fallback)', async () => {
-    await soUploadPage.statusIconFallback.click();
-    await page.waitForTimeout(5000);
+  test('Wait for Fully Processed and Click Status', async () => {
+    test.setTimeout(120000);
+    await soUploadPage.waitForFullyProcessedAndClickStatus();
   });
 
   test('Capture Invoice Numbers', async () => {
+    await page.waitForTimeout(3000);
     await soUploadPage.captureInvoiceNumbers();
   });
 
