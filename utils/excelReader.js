@@ -1,4 +1,5 @@
 import XLSX from 'xlsx';
+import { existsSync } from 'fs';
 import { FILE_PATHS } from '../config/testData.js';
 
 function toTitleCase(str) {
@@ -6,6 +7,11 @@ function toTitleCase(str) {
 }
 
 function parseRows() {
+    if (!existsSync(FILE_PATHS.obcFile)) {
+        console.warn(`[excelReader] OBC file not found at ${FILE_PATHS.obcFile} — exporting empty data. Tests that need firstOBCData/allOBCData will fail at runtime.`);
+        return [];
+    }
+
     const wb = XLSX.readFile(FILE_PATHS.obcFile);
     const ws = wb.Sheets[wb.SheetNames[0]];
     const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });

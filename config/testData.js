@@ -1,3 +1,17 @@
+import { existsSync, readFileSync } from 'fs';
+import { resolve } from 'path';
+
+function readCollectionCheque() {
+    try {
+        const file = resolve(process.cwd(), 'utils/collectionRefs.json');
+        if (!existsSync(file)) return {};
+        const data = JSON.parse(readFileSync(file));
+        return data.cheque || {};
+    } catch {
+        return {};
+    }
+}
+
 export const URLS = {
     cdms: 'https://cdms-preprod.ripplr.in/login',
     collection: 'https://collection-preprod.ripplr.in/login',
@@ -20,10 +34,14 @@ export const USERS = {
         email: 'cash4@ripplr.in',
         password: 'Ripplr@123',
     },
+    segCA: {
+        email: 'segobc2@ripplr.in',
+        password: 'Ripplr@123',
+    },
 };
 
 export const FILE_PATHS = {
-    obcFile: 'C:\\Users\\User\\Downloads\\preprodobc 2 (version 1).xlsb.xlsx',
+    obcFile: 'C:\\Users\\User\\Downloads\\preprodobc 2.xlsx',
     soReport: 'C:\\Users\\User\\Downloads\\m1 6.csv',
     invoiceReport: 'C:\\Users\\User\\Downloads\\h1 6.csv',
     salesRegister: 'C:\\Users\\User\\Downloads\\sr 10.csv',
@@ -46,10 +64,10 @@ export const CONFIRMATION = {
 };
 
 export const AMOUNTS = {
-    cash: '65',
-    cheque: '10',
-    qr: '11',
-    neft: '50',
+    cash: '',
+    cheque: '44',
+    qr: '15',
+    neft: '60',
 };
 
 export const SEG = {
@@ -62,6 +80,7 @@ export const OBC = {
     fc: 'BTML: BTM',
     brand: 'BRIT: Britannia',
 };
+
 
 // ── OBC Elimination ──────────────────────────────────────────────────────────
 // Switch brand by changing activeBrand: 'nestle' | 'sunpure' | 'dabur'
@@ -81,13 +100,13 @@ const OBC_BRANDS = {
     },
     sunpure: {
         fc: 'BGRD: Begur Road',
-        brand: 'SNPR: Sunpure',
+        brand: 'SNPRGT: Sunpure GT',
         fcId: 72,
-        brandId: 39,
+        brandId: 46,
         fcSearchText: 'BGRD',
-        brandSearchText: 'SNPR',
+        brandSearchText: 'SNPRGT',
         uploadType: 'Credit Adjustment',
-        filePath: 'C:\\Users\\User\\Downloads\\CollectionReport (24).xlsx',
+        filePath: 'C:\\Users\\User\\Downloads\\CollectionReport_SUNPURE.xlsx',
         testAdjustedCrAmount: '1.00',
         generateNewFile: 0,
     },
@@ -118,13 +137,13 @@ const OBC_BRANDS = {
 };
 
 // ▶▶▶ CHANGE THIS TO SWITCH BRAND ◀◀◀
-const activeBrand = 'hulsamadhan';
+const activeBrand = 'sunpure';
 
 export const OBC_ELIMINATION = OBC_BRANDS[activeBrand];
 
 // V = Verify, R = Reject, NA = Neglect/Ignore (skip)
 export const PAYMENT_MODES = {
-    cash: 'V',
+    cash: 'NA',
     cheque: 'V',
     upi: 'V',
     neft: 'V',
@@ -140,13 +159,39 @@ export const DELIVERY = {
 };
 
 export const RFC_COLLECTION = {
-    cash: '1',
+    cash: '',
     cheque: '',
     upi: '',
     neft: '',
 };
 
 export const RFC_UPLOAD_FILES = [
+    'utils/testFiles/rfc_doc1.jpg',
+    'utils/testFiles/rfc_doc2.jpg',
+];
+
+
+export const CBM_SEG = {
+    verificationMode: 'V', // 'V' = Verification, 'R' = Rejection
+};
+
+const _savedCheque = readCollectionCheque();
+export const CHEQUE_BOUNCE = {
+    chequeBounceNo: _savedCheque.refNumber || '384734',
+    amount: _savedCheque.amount || '',
+    fcText: 'BTM',
+    salesOfficerName: 'Nikesh Giri',
+    salesOfficerMobile: '8840576893',
+};
+
+export const CBM_COLLECTION = {
+    cash:   { amount: '1', mode: 'NA' },  // V = Verify, R = Reject, NA = Skip
+    cheque: { amount: '2', mode: 'V' },
+    upi:    { amount: '3', refNo: '11111123', mode: 'NA' },
+    neft:   { amount: '4', refNo: '22222233', mode: 'V' },
+};
+
+export const CBM_UPLOAD_FILES = [
     'utils/testFiles/rfc_doc1.jpg',
     'utils/testFiles/rfc_doc2.jpg',
 ];

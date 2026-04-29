@@ -52,9 +52,10 @@ export class CollectionPage {
     async clickDownArrow() { await this.downArrow.click(); }
     async fillCash(amount) { await this.cash.fill(amount); }
     async fillChequeAmount(amount) { await this.chequeAmount.fill(amount); }
-    async fillChequeRefNumber() {
+    async fillChequeRefNumber(amount) {
         const refNumber = Math.floor(100000 + Math.random() * 900000).toString();
         await this.chequeRefNumber.fill(refNumber);
+        saveRef('cheque', { refNumber, amount });
     }
     async clickChequeBankId() {
         const isInteractable = await this.chequeBankId.evaluate(el => {

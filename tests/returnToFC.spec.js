@@ -44,9 +44,8 @@ test.describe('Return to FC Flow', () => {
     await returnToFCPage.clickReturnToFC();
   });
 
-  test('Click Eye Icon for Test Driver', async () => {
-    await returnToFCPage.clickEyeIcon(DELIVERY.driverName);
-    
+  test('Click Eye Icon for Latest Vehicle', async () => {
+    await returnToFCPage.clickEyeIcon(DELIVERY.vehicleNo);
   });
 
   test('Scroll Down', async () => {
@@ -64,15 +63,20 @@ test.describe('Return to FC Flow', () => {
     await returnToFCPage.verifyAllInvoices();
   });
 
-  test('Upload RFC Files', async () => {
+  test('Upload RFC File (First Time)', async () => {
     test.setTimeout(60000);
-    await returnToFCPage.uploadRFCFiles(RFC_UPLOAD_FILES);
+    await returnToFCPage.uploadRFCFiles([RFC_UPLOAD_FILES[0]]);
+  });
+
+  test('Upload RFC File (Second Time)', async () => {
+    test.setTimeout(60000);
+    await returnToFCPage.uploadRFCFiles([RFC_UPLOAD_FILES[1]]);
   });
 
   test('Click Verify RFC', async () => {
     test.setTimeout(60000);
     await returnToFCPage.clickVerifyRFC();
-    await page.waitForTimeout(6000);
+    await page.waitForTimeout(3000);
   });
 
   test('Subtract Collection Date for All Invoices', async () => {

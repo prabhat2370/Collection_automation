@@ -19,7 +19,7 @@ export class SOUploadPage {
         this.selectFileTypeDropdown = this.page.locator('div').filter({ hasText: /^Select File Type$/ }).nth(1);
         this.soOption = this.page.locator("//div[@title='Sales Order']");
         this.searchBtn = this.page.getByRole('button', { name: 'Search' });
-        this.statusIcon = this.page.locator("//tbody/tr[td[contains(., 'Sales Order')]][1]//td[7]//span[@aria-label='warning']");
+        this.statusIcon = this.page.locator("//tbody/tr[td[contains(., 'Sales Order')]][1]//td[7]//img | //tbody/tr[td[contains(., 'Sales Order')]][1]//td[7]//span[@aria-label]");
         this.statusIconFallback = this.page.locator("body > div:nth-child(2) > div:nth-child(2) > div:nth-child(2) > div:nth-child(2) > div:nth-child(1) > div:nth-child(2) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > table:nth-child(1) > tbody:nth-child(3) > tr:nth-child(1) > td:nth-child(7) > div:nth-child(1) > div:nth-child(1) > img:nth-child(1)");
         this.closeBtn = this.page.getByRole('button', { name: 'Close' });
         this.fcOption = this.page.locator('div').filter({ hasText: /^Fc Type$/ }).nth(4);
@@ -38,6 +38,7 @@ export class SOUploadPage {
             this.soReportUpload.click(),
         ]);
         await fileChooser.setFiles(filePath);
+        await this.page.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => {});
     }
     async uploadInvoiceReport(filePath) {
         const [fileChooser] = await Promise.all([
@@ -45,6 +46,7 @@ export class SOUploadPage {
             this.invoiceReportUpload.click(),
         ]);
         await fileChooser.setFiles(filePath);
+        await this.page.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => {});
     }
     async uploadSalesRegister(filePath) {
         const [fileChooser] = await Promise.all([
@@ -52,30 +54,76 @@ export class SOUploadPage {
             this.salesRegisterUpload.click(),
         ]);
         await fileChooser.setFiles(filePath);
+        await this.page.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => {});
     }
     async clickSubmit() { await this.submitBtn.click(); }
+
+    async observeAfterSubmit() {
+        await this.page.waitForTimeout(5000);
+
+        // Capture screenshot
+        const shotPath = resolve(process.cwd(), 'utils/afterSubmit.png');
+        await this.page.screenshot({ path: shotPath, fullPage: true }).catch(() => {});
+        console.log('[Observe] Screenshot saved to:', shotPath);
+
+        // Modal state
+        const modal = this.page.locator('.ant-modal:visible, [role="dialog"]:visible').first();
+        const modalVisible = await modal.isVisible().catch(() => false);
+        console.log('[Observe] Modal still visible after Submit:', modalVisible);
+
+        // Toast / notification messages (Ant Design)
+        const toastSelectors = [
+            '.ant-message-notice-content',
+            '.ant-notification-notice-message',
+            '.ant-notification-notice-description',
+            '.ant-form-item-explain-error',
+            '.ant-alert-message',
+        ];
+        for (const sel of toastSelectors) {
+            const els = await this.page.locator(sel).all();
+            for (const el of els) {
+                const text = (await el.innerText().catch(() => '')).trim();
+                if (text) console.log(`[Observe] ${sel}: ${text}`);
+            }
+        }
+
+        // Inline error text inside the modal (form validation)
+        if (modalVisible) {
+            const errorEls = await modal.locator('.ant-form-item-has-error, [role="alert"], .error, [class*="error" i]').all();
+            for (const el of errorEls) {
+                const text = (await el.innerText().catch(() => '')).trim();
+                if (text) console.log('[Observe] Modal-error:', text);
+            }
+        }
+    }
     async clickSelectFileTypeDropdown() { await this.selectFileTypeDropdown.click(); }
     async clickSOOption() { await this.soOption.click(); }
     async clickSearch() { await this.searchBtn.click(); }
     async clickStatusIcon() { await this.statusIcon.dispatchEvent('click'); }
     
-    async waitForFreshUploadAndClickStatus() {
-        const maxRetries = 24; // 24 x 5s = 2 min max wait
-        const waitMs = 5000;
-
-        // Step 1: Navigate back to adapter-uploads once
+    async waitForPageDataLoad() {
         await this.page.goto('https://cdms-preprod.ripplr.in/adapter-uploads', { waitUntil: 'domcontentloaded' });
         await this.page.waitForTimeout(2000);
+        await this.page.waitForFunction(() => {
+            const rows = document.querySelectorAll('table tbody tr');
+            return rows.length > 0;
+        }, { timeout: 15000 }).catch(() => {});
+    }
 
-        // Step 2: Select SO dropdown once
+    async applySalesOrderFilter() {
         await this.selectFileTypeDropdown.click();
         await this.page.waitForTimeout(500);
         await this.soOption.click();
         await this.page.waitForTimeout(500);
+    }
 
-        // Step 3: Click Search and check — repeat until fresh fully processed entry found
+    async waitForFullyProcessedAndClickStatus() {
+        const maxRetries = 24; // 24 x 5s = 2 min max wait
+        const waitMs = 5000;
+
         for (let i = 0; i < maxRetries; i++) {
-            await this.searchBtn.click();
+            // Re-click search on retries to refresh the table
+            if (i > 0) await this.searchBtn.click();
 
             // Wait for table data to load
             await this.page.waitForFunction(() => {
@@ -86,7 +134,7 @@ export class SOUploadPage {
             const statusCell = this.page.locator("//tbody/tr[td[contains(., 'Sales Order')]][1]//td[6]");
             const found = await statusCell.isVisible().catch(() => false);
             if (!found) {
-                console.log('Attempt ' + (i + 1) + ': No Sales Order row yet, retrying search...');
+                console.log('Attempt ' + (i + 1) + ': No Sales Order row yet, retrying...');
                 await this.page.waitForTimeout(waitMs);
                 continue;
             }
@@ -94,19 +142,6 @@ export class SOUploadPage {
             const rawText = await statusCell.innerText();
             console.log('Attempt ' + (i + 1) + ': Status: ' + rawText.replace(/\n/g, ' '));
 
-            // Fail immediately on validation error
-            if (rawText.toLowerCase().includes('validation error')) {
-                throw new Error('Upload failed with Validation Error — fix the file and re-upload.');
-            }
-
-            // Keep retrying if not fully processed yet
-            if (!rawText.toLowerCase().includes('fully processed')) {
-                console.log('Attempt ' + (i + 1) + ': Not fully processed yet, retrying search...');
-                await this.page.waitForTimeout(waitMs);
-                continue;
-            }
-
-            // Fully processed — check timestamp
             const match = rawText.match(/(\d{2})\/(\d{2})\/(\d{4}),\s*(\d{1,2}:\d{2}\s*[AP]M)/i);
             if (!match) {
                 console.log('Attempt ' + (i + 1) + ': Could not parse timestamp, retrying...');
@@ -116,16 +151,27 @@ export class SOUploadPage {
 
             const uploadTime = new Date(match[2] + '/' + match[1] + '/' + match[3] + ' ' + match[4]);
             const diffSecs = (Date.now() - uploadTime.getTime()) / 1000;
-            console.log('Attempt ' + (i + 1) + ': Fully Processed, age ' + Math.round(diffSecs) + 's');
+            console.log('Attempt ' + (i + 1) + ': age ' + Math.round(diffSecs) + 's');
 
-            if (diffSecs < 60) {
-                console.log('Fresh entry found! Clicking status icon...');
-                await this.statusIcon.first().dispatchEvent('click');
-                return;
+            if (diffSecs >= 300) {
+                console.log('Stale entry, retrying search...');
+                await this.page.waitForTimeout(waitMs);
+                continue;
             }
 
-            console.log('Stale entry, retrying search...');
-            await this.page.waitForTimeout(waitMs);
+            if (rawText.toLowerCase().includes('validation error')) {
+                throw new Error('Upload failed with Validation Error — fix the file and re-upload.');
+            }
+
+            if (!rawText.toLowerCase().includes('fully processed')) {
+                console.log('Attempt ' + (i + 1) + ': Not fully processed yet, retrying...');
+                await this.page.waitForTimeout(waitMs);
+                continue;
+            }
+
+            console.log('Fresh fully processed entry found! Clicking status icon...');
+            await this.statusIcon.first().dispatchEvent('click');
+            return;
         }
 
         throw new Error('Fully processed SO upload not found within 2 minutes');

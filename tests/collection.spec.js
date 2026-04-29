@@ -54,7 +54,7 @@ test.describe('Collection Flow', () => {
 
   test('Fill Cheque Reference Number', async () => {
     test.skip(!AMOUNTS.cheque, 'No cheque amount set — skipping');
-    await collectionPage.fillChequeRefNumber();
+    await collectionPage.fillChequeRefNumber(AMOUNTS.cheque);
   });
 
   test('Click Cheque Bank Dropdown', async () => {

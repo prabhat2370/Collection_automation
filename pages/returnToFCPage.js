@@ -17,7 +17,7 @@ export class ReturnToFCPage {
 
         this.logisticsManagement = this.page.locator("//span[normalize-space()='Logistics Management']");
         this.returnToFC = this.page.locator("//a[normalize-space()='Return to FC']");
-        this.eyeIcon = (driverName) => this.page.locator(`//tr[td[contains(., '${driverName}')]]//a[contains(@href, 'return-to-fc-new')]`);
+        this.eyeIcon = (vehicleNo) => this.page.locator(`//tr[td[contains(., '${vehicleNo}')]]//a[contains(@href, 'return-to-fc-new')]`);
         this.deliveryStatusDropdown = (invoice) => this.page.locator(`//tr[td[contains(., '${invoice}')]]//td[7]//div[contains(@class,'ant-select-selector')]`);
         this.statusOption = (text) => this.page.locator(`//div[contains(@class,'ant-select-item-option') and @title='${text}']`);
         this.okBtn = this.page.locator(":text('OK')");
@@ -49,7 +49,7 @@ export class ReturnToFCPage {
 
     async clickLogisticsManagement() { await this.logisticsManagement.click(); }
     async clickReturnToFC() { await this.returnToFC.click(); }
-    async clickEyeIcon(driverName) { await this.eyeIcon(driverName).first().click(); }
+    async clickEyeIcon(vehicleNo) { await this.eyeIcon(vehicleNo).first().click(); }
 
     async clickOK() { await this.okBtn.click(); }
     async clickYes() { await this.yesBtn.click(); }
@@ -196,10 +196,15 @@ export class ReturnToFCPage {
         // Open the upload modal
         await this.uploadInvBtn.scrollIntoViewIfNeeded();
         await this.uploadInvBtn.click();
-        await this.page.waitForTimeout(1500);
 
-        // File input is always in DOM (hidden) — set both files at once (input has multiple attr)
-        await this.fileInput.setInputFiles(absPaths);
+        // Wait for modal to actually become visible
+        const modal = this.page.locator('.ant-modal:visible').first();
+        await modal.waitFor({ state: 'visible', timeout: 10000 });
+        await this.page.waitForTimeout(500);
+
+        // Scope file input to the visible modal — avoids matching stale inputs
+        const modalFileInput = modal.locator("input[type='file']");
+        await modalFileInput.setInputFiles(absPaths);
         await this.page.waitForTimeout(2000);
 
         // Click Upload to confirm
@@ -207,25 +212,50 @@ export class ReturnToFCPage {
         try {
             await this.page.waitForLoadState('networkidle', { timeout: 8000 });
         } catch (_) { /* upload may navigate */ }
-        await this.page.waitForTimeout(2000);
+
+        // Wait for modal to close so the next upload iteration starts fresh
+        await modal.waitFor({ state: 'hidden', timeout: 10000 }).catch(() => {});
+        await this.page.waitForTimeout(1000);
 
         console.log('--- Files uploaded ---');
     }
 
+    async isVerifyBtnEnabled() {
+        const count = await this.verifyRFCBtn.count();
+        if (count === 0) return false;
+        const first = this.verifyRFCBtn.first();
+        if (!(await first.isVisible().catch(() => false))) return false;
+
+        return await first.evaluate(node => {
+            const btn = node.tagName === 'BUTTON' ? node : (node.closest('button') || node);
+            if (btn.disabled === true) return false;
+            if (btn.hasAttribute('disabled')) return false;
+            if (btn.getAttribute('aria-disabled') === 'true') return false;
+            const cls = btn.className || '';
+            if (/(?:^|\s)(?:ant-btn-)?disabled(?:\s|$)/i.test(cls)) return false;
+            return true;
+        }).catch(() => false);
+    }
+
     async clickVerifyRFC() {
-        // Wait for Verify button to load properly
         await this.page.waitForTimeout(4000);
         await this.verifyRFCBtn.scrollIntoViewIfNeeded();
         await this.verifyRFCBtn.click({ force: true });
         await this.page.waitForTimeout(3000);
 
-        // If Verify button still visible, click again
-        if (await this.verifyRFCBtn.isVisible()) {
-            console.log('Verify button still visible — clicking again...');
+        let stillEnabled = await this.isVerifyBtnEnabled();
+
+        if (stillEnabled) {
+            console.log('Verify button still enabled — clicking again...');
             await this.verifyRFCBtn.click({ force: true });
             await this.page.waitForTimeout(3000);
+            stillEnabled = await this.isVerifyBtnEnabled();
         }
 
-        console.log('--- RFC Verified (Closed) ---');
+        if (stillEnabled) {
+            throw new Error('Verify button still enabled after click — RFC NOT completed.');
+        }
+
+        console.log('--- ✓ Verify button disabled → RFC completed ---');
     }
 }

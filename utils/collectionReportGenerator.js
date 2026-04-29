@@ -1,6 +1,113 @@
 import { createRequire } from 'module';
+import { readFileSync, writeFileSync } from 'fs';
 const require = createRequire(import.meta.url);
 const XLSX = require('xlsx');
+
+/**
+ * Splits a single CSV line into fields, respecting double-quoted fields that may contain commas.
+ */
+function splitCsvLine(line) {
+    const fields = [];
+    let cur = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (inQuotes) {
+            if (ch === '"' && line[i + 1] === '"') { cur += '""'; i++; }
+            else if (ch === '"') { cur += ch; inQuotes = false; }
+            else { cur += ch; }
+        } else {
+            if (ch === ',') { fields.push(cur); cur = ''; }
+            else if (ch === '"') { cur += ch; inQuotes = true; }
+            else { cur += ch; }
+        }
+    }
+    fields.push(cur);
+    return fields;
+}
+
+/**
+ * Reads a CSV file as plain text — preserves every byte of every column except the one we touch.
+ */
+function readCsvText(filePath) {
+    const text = readFileSync(filePath, 'utf8');
+    const eol = text.includes('\r\n') ? '\r\n' : '\n';
+    const lines = text.split(/\r?\n/);
+    if (lines.length < 2) throw new Error(`No data rows in: ${filePath}`);
+    const headers = splitCsvLine(lines[0]).map(h => h.replace(/^"|"$/g, '').trim().toLowerCase());
+    const colIdx = headers.findIndex(h => h === 'invoice no');
+    if (colIdx < 0) throw new Error(`"Invoice No" column not found in: ${filePath}`);
+    return { lines, eol, colIdx };
+}
+
+/**
+ * Generates an invoice number in the form: INV1store{digit}{aaa}
+ * — fixed prefix "INV1store" + 1 random digit + 3 random lowercase letters (e.g. "INV1store3eds").
+ */
+function generateRandomInvoiceNo() {
+    const digit = Math.floor(Math.random() * 10);
+    const alpha = Array.from({ length: 3 }, () =>
+        String.fromCharCode(97 + Math.floor(Math.random() * 26))
+    ).join('');
+    return `INV1store${digit}${alpha}`;
+}
+
+/**
+ * Prepares all 3 SO upload files with fresh unique invoice numbers before each test run.
+ *
+ * Reads each CSV in place, rewrites only the "Invoice No" column with fresh random numbers
+ * (format: INV1store{digit}{aaa}), and writes back to the same path. Every other column
+ * (Invoice Date, etc.) is preserved byte-for-byte.
+ *
+ * Invoice Report is the master — its row count determines how many unique invoice numbers
+ * are generated. SO Report / Sales Register may have more rows when the last invoice spans
+ * multiple line items; those extra rows reuse the last invoice number.
+ *
+ * @param {string} soReportPath       - Path to SO Report CSV (read + written in place)
+ * @param {string} invoiceReportPath  - Path to Invoice Report CSV (master row count)
+ * @param {string} salesRegisterPath  - Path to Sales Register CSV
+ * @returns {string[]} unique invoice numbers generated
+ */
+export function prepareSOUploadFiles(soReportPath, invoiceReportPath, salesRegisterPath) {
+    const so  = readCsvText(soReportPath);
+    const inv = readCsvText(invoiceReportPath);
+    const sr  = readCsvText(salesRegisterPath);
+
+    const invDataRows = inv.lines.slice(1).filter(l => l.trim() !== '').length;
+    const invoiceNos = [];
+    const seen = new Set();
+    while (invoiceNos.length < invDataRows) {
+        const candidate = generateRandomInvoiceNo();
+        if (!seen.has(candidate)) {
+            seen.add(candidate);
+            invoiceNos.push(candidate);
+        }
+    }
+
+    for (const { path, label, file } of [
+        { path: soReportPath,      label: 'SO Report',      file: so  },
+        { path: invoiceReportPath, label: 'Invoice Report', file: inv },
+        { path: salesRegisterPath, label: 'Sales Register', file: sr  },
+    ]) {
+        const assigned = [];
+        let dataRowCount = 0;
+        const newLines = file.lines.map((line, i) => {
+            if (i === 0) return line;
+            if (line.trim() === '') return line;
+            const newInv = invoiceNos[Math.min(dataRowCount, invoiceNos.length - 1)];
+            const fields = splitCsvLine(line);
+            fields[file.colIdx] = newInv;
+            assigned.push(newInv);
+            dataRowCount++;
+            return fields.join(',');
+        });
+        writeFileSync(path, newLines.join(file.eol));
+        console.log(`[SOPrep] ${label} (${dataRowCount} rows) → ${path}: [${assigned.join(', ')}]`);
+    }
+
+    console.log(`[SOPrep] Unique invoices: [${invoiceNos.join(', ')}]`);
+    return invoiceNos;
+}
 
 /**
  * Formats a Date object to DD/MM/YYYY — matching the Nestlé collection report format.

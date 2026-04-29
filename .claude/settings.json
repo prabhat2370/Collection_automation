@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": ["Bash(dev-browser *)"],
+    "cleanupPeriodDays" : 7
+
+  }
+}
+
+

@@ -18,8 +18,11 @@ export class LoginPage {
   }
 
   async logout() {
+    await this.page.locator('.ant-modal-wrap').waitFor({ state: 'hidden', timeout: 10000 }).catch(() => {});
     await this.profileIcon.click();
+    await this.page.waitForTimeout(1500);
     await this.logoutBtn.click();
-    await this.logoutYesBtn.click();
+    await this.page.waitForTimeout(2000);
+    await this.logoutYesBtn.last().click({ timeout: 5000 }).catch(() => {});
   }
 }

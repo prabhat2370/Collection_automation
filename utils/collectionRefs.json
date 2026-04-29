@@ -1,10 +1,14 @@
 {
   "upi": {
-    "refNumber": "62962035443873",
-    "amount": "11"
+    "refNumber": "58899690242053",
+    "amount": "15"
   },
   "neft": {
-    "refNumber": "179637898136",
-    "amount": "50"
+    "refNumber": "865745818540",
+    "amount": "60"
+  },
+  "cheque": {
+    "refNumber": "962282",
+    "amount": "44"
   }
 }

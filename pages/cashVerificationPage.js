@@ -110,9 +110,8 @@ export class CashVerificationPage {
         } else if (mode === 'R') {
             await this.waitForLoader();
             await this.cashRedClose.click({ force: true });
-            await this.addReasonBtn.click();
-            await this.commentInput.fill('REJECT');
-            await this.addBtn.click();
+            await this.bothBtn.click();
+            await this.submitBtn.click();
             await this.saveBtn.click();
         }
         // NA = skip
