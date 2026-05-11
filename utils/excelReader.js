@@ -1,18 +1,18 @@
 import XLSX from 'xlsx';
 import { existsSync } from 'fs';
-import { FILE_PATHS } from '../config/testData.js';
+import { OBC_UPLOAD_FILE } from '../test-data/obcUpload.js';
 
 function toTitleCase(str) {
     return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 }
 
 function parseRows() {
-    if (!existsSync(FILE_PATHS.obcFile)) {
-        console.warn(`[excelReader] OBC file not found at ${FILE_PATHS.obcFile} — exporting empty data. Tests that need firstOBCData/allOBCData will fail at runtime.`);
+    if (!existsSync(OBC_UPLOAD_FILE)) {
+        console.warn(`[excelReader] OBC file not found at ${OBC_UPLOAD_FILE} — exporting empty data. Tests that need firstOBCData/allOBCData will fail at runtime.`);
         return [];
     }
 
-    const wb = XLSX.readFile(FILE_PATHS.obcFile);
+    const wb = XLSX.readFile(OBC_UPLOAD_FILE);
     const ws = wb.Sheets[wb.SheetNames[0]];
     const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
 

@@ -1,4 +1,4 @@
-import { CHEQUE_BOUNCE } from '../config/testData.js';
+import { CHEQUE_BOUNCE } from '../test-data/cbm.js';
 
 export class ChequeBouncePage {
     /**
@@ -28,7 +28,7 @@ export class ChequeBouncePage {
             `//tr[td[2][contains(., '${CHEQUE_BOUNCE.fcText}')]]//td[1]//input[@type='checkbox']`
         );
         this.submitAndAddMoreBtn = this.page.locator(":text('Submit and Close')");
-        this.yesBtn              = this.page.locator(":text('Yes')");
+        this.yesBtn              = this.page.locator(":text-is('Yes')");
 
         // ── Cashier navigation ────────────────────────────────────────────────
         this.markBounceLink = this.page.locator(

@@ -19,6 +19,10 @@
     "cbmCashV": "npx playwright test tests/cbmCashVerification.spec.js --headed",
     "cbmSegV": "npx playwright test tests/cbmSegVerification.spec.js --headed",
     "smoke": "npx playwright test tests/smokeTest.spec.js --headed",
+    "tc:generate": "node test-cases/generateTestCases.js",    
+    "tc:update": "node test-cases/update-results.js",
+    "test:daily": "npx playwright test --headed; node test-cases/update-results.js",
+    "test:selected": "node test-cases/run-selected.js",
     "allure:generate": "allure generate allure-results --clean -o allure-report",
     "allure:open": "allure open allure-report",
     "allure:report": "npm run allure:generate && npm run allure:open"

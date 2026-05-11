@@ -1,4 +1,4 @@
-import { URLS } from '../config/testData.js';
+import { URLS } from '../test-data/urls.js';
 
 export class LoginPage {
   constructor(page) {

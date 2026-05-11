@@ -1,4 +1,4 @@
-import { OBC } from '../config/testData.js';
+import { OBC_UPLOAD as OBC } from '../test-data/obcUpload.js';
 
 export class ObcUpload {
     constructor(page) {
@@ -24,8 +24,8 @@ export class ObcUpload {
     async clickUpload() { await this.upload.click(); }
     async clickUploadTypeDropdown() { await this.uploadType.click(); }
     async clickFCDropdown() { await this.fcOption.click(); }
-    async typeBTM() { await this.page.keyboard.type('BTM'); }
-    async selectBTM() { await this.selectedFC.click(); }
+    async typeCMBT() { await this.page.keyboard.type('CMBT'); }
+    async selectCMBT() { await this.selectedFC.click(); }
     async clickBrandDropdown() { await this.brandOption.click(); }
     async typeBRIT() { await this.page.keyboard.type('BRIT'); }
     async selectBritannia() { await this.selectedBrand.click(); }

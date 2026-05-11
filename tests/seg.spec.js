@@ -1,17 +1,15 @@
-import { SegPage } from '../pages/segPage';
-import { LoginPage } from '../pages/LoginPage';
 import { test } from '@playwright/test';
-import { USERS } from '../config/testData.js';
+import { SegPage } from '../pages/segPage';
+import { loginAs } from '../utils/auth.js';
 
 test.describe.configure({ mode: 'serial' });
 
 test.describe('Seg Flow', () => {
 
-  let page, loginPage, segPage;
+  let page, segPage;
 
   test.beforeAll(async ({ browser }) => {
     page = await browser.newPage();
-    loginPage = new LoginPage(page);
     segPage = new SegPage(page);
   });
 
@@ -19,74 +17,50 @@ test.describe('Seg Flow', () => {
     await page.close();
   });
 
-  test('Open Login Page', async () => {
-    await loginPage.navigate();
+  test.afterEach(async ({}, testInfo) => {
+    if (process.env.CAPTURE_SCREENSHOTS === 'N') return;
+    if (page && !page.isClosed()) {
+      try {
+        await page.waitForTimeout(1500);
+        const buf = await page.screenshot({ fullPage: true });
+        await testInfo.attach('screenshot', { body: buf, contentType: 'image/png' });
+      } catch (err) {
+        console.log('[afterEach] screenshot failed:', err.message);
+      }
+    }
   });
 
-  test('Fill Email', async () => {
-    await loginPage.emailInput.fill(USERS.seg.email);
-  });
+  test('Allocate invoice to salesman for CMBT Britannia', async () => {
+    await test.step('Login as Seg', async () => {
+      await loginAs(page, 'seg');
+    });
 
-  test('Fill Password', async () => {
-    await loginPage.passwordInput.fill(USERS.seg.password);
-  });
+    await test.step('Open Allocation page', async () => {
+      await segPage.clickAllocationLink();
+    });
 
-  test('Click Login Button', async () => {
-    await loginPage.loginBtn.click();
-  });
+    await test.step('Select FC = CMBT, Brand = Britannia, Continue', async () => {
+      await segPage.clickFCDropdown();
+      await segPage.selectCMBT();
+      await segPage.clickBrandDropdown();
+      await segPage.selectBritannia();
+      await segPage.clickContinue();
+    });
 
-  test('Click Allocation Link', async () => {
-    await segPage.clickAllocationLink();
-  });
+    await test.step('Pick salesman and search', async () => {
+      await segPage.clickSalesmanDropdown();
+      await segPage.selectAbdul();
+      await segPage.clickSearch();
+      await page.waitForTimeout(5000);
+    });
 
-  test('Click FC Dropdown', async () => {
-    await segPage.clickFCDropdown();
-  });
-
-  test('Select BTM', async () => {
-    await segPage.selectBTM();
-  });
-
-  test('Click Brand Dropdown', async () => {
-    await segPage.clickBrandDropdown();
-  });
-
-  test('Select Britannia', async () => {
-    await segPage.selectBritannia();
-  });
-
-  test('Click Continue Button', async () => {
-    await segPage.clickContinue();
-  });
-
-  test('Click Salesman Dropdown', async () => {
-    await segPage.clickSalesmanDropdown();
-  });
-
-  test('Select Abdul', async () => {
-    await segPage.selectAbdul();
-  });
-
-  test('Click Search Button', async () => {
-    await segPage.clickSearch();
-    await page.waitForTimeout(5000);
-  });
-
-  test('Scroll Page', async () => {
-    await segPage.scrollPage();
-  });
-
-  test('Click "INVstore2zz" Checkbox', async () => {
-    await segPage.clickCheckbox();
-  });
-
-  test('Click Assign', async () => {
-    await segPage.clickAssign();
-  });
-
-  test('Click Submit', async () => {
-    await segPage.clickSubmit();
-    await page.waitForTimeout(5000);
+    await test.step('Select invoice checkbox, assign and submit', async () => {
+      await segPage.scrollPage();
+      await segPage.clickCheckbox();
+      await segPage.clickAssign();
+      await segPage.clickSubmit();
+      await page.waitForTimeout(5000);
+    });
   });
 
 });

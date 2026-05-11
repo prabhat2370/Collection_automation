@@ -1,17 +1,16 @@
 import { test } from '@playwright/test';
-import { LoginPage } from '../pages/LoginPage';
 import { CbmCashVerificationPage } from '../pages/cbmCashVerificationPage';
-import { USERS, CBM_COLLECTION } from '../config/testData.js';
+import { loginAs } from '../utils/auth.js';
+import { CBM_COLLECTION } from '../test-data/cbm.js';
 
 test.describe.configure({ mode: 'serial' });
 
 test.describe('CBM Cashier Verification Flow', () => {
 
-    let page, loginPage, cbmCashVerificationPage;
+    let page, cbmCashVerificationPage;
 
     test.beforeAll(async ({ browser }) => {
         page = await browser.newPage();
-        loginPage = new LoginPage(page);
         cbmCashVerificationPage = new CbmCashVerificationPage(page);
     });
 
@@ -19,74 +18,61 @@ test.describe('CBM Cashier Verification Flow', () => {
         await page.close();
     });
 
-    test('Open Login Page', async () => {
-        await loginPage.navigate();
+    test.afterEach(async ({}, testInfo) => {
+        if (process.env.CAPTURE_SCREENSHOTS === 'N') return;
+        if (page && !page.isClosed()) {
+            try {
+                await page.waitForTimeout(1500);
+                const buf = await page.screenshot({ fullPage: true });
+                await testInfo.attach('screenshot', { body: buf, contentType: 'image/png' });
+            } catch (err) {
+                console.log('[afterEach] screenshot failed:', err.message);
+            }
+        }
     });
 
-    test('Fill Email', async () => {
-        await loginPage.emailInput.fill(USERS.cash.email);
-    });
+    test('CBM Cashier verification for configured payment modes', async () => {
+        test.setTimeout(120000);
 
-    test('Fill Password', async () => {
-        await loginPage.passwordInput.fill(USERS.cash.password);
-    });
+        await test.step('Login as Cash', async () => {
+            await loginAs(page, 'cash');
+        });
 
-    test('Click Login Button', async () => {
-        await loginPage.loginBtn.click();
-    });
+        await test.step('Open Cheque Bounce Recovery Verification', async () => {
+            await cbmCashVerificationPage.clickChequeBounceMenu();
+            await cbmCashVerificationPage.clickChequeBounceRecovery();
+            await cbmCashVerificationPage.clickReadyForVerification();
+            await cbmCashVerificationPage.clickStartVerification();
+        });
 
-    test('Click Cheque Bounce Menu', async () => {
-        await cbmCashVerificationPage.clickChequeBounceMenu();
-    });
-
-    test('Click Cheque Bounce Recovery Verification', async () => {
-        await cbmCashVerificationPage.clickChequeBounceRecovery();
-    });
-
-    test('Click Ready For Verification', async () => {
-        await cbmCashVerificationPage.clickReadyForVerification();
-    });
-
-    test('Click Start Verification', async () => {
-        await cbmCashVerificationPage.clickStartVerification();
-    });
-
-    test('Run Cash Flow', async () => {
         if (CBM_COLLECTION.cash.mode !== 'NA') {
-            await cbmCashVerificationPage.runCashFlow();
+            await test.step('Run cash flow', async () => {
+                await cbmCashVerificationPage.runCashFlow();
+            });
         }
-    });
 
-    test('Run Cheque Flow', async () => {
         if (CBM_COLLECTION.cheque.mode !== 'NA') {
-            await cbmCashVerificationPage.runChequeFlow();
+            await test.step('Run cheque flow', async () => {
+                await cbmCashVerificationPage.runChequeFlow();
+            });
         }
-    });
 
-    test('Insert UPI Bank Statement', async () => {
         if (CBM_COLLECTION.upi.mode !== 'NA') {
-            await cbmCashVerificationPage.runUPIInsert();
-            await page.reload();
+            await test.step('Insert UPI bank statement (DB) and run UPI flow', async () => {
+                await cbmCashVerificationPage.runUPIInsert();
+                await page.reload();
+                await cbmCashVerificationPage.runUPIFlow();
+            });
         }
-    });
 
-    test('Run UPI Flow', async () => {
-        if (CBM_COLLECTION.upi.mode !== 'NA') {
-            await cbmCashVerificationPage.runUPIFlow();
-        }
-    });
-
-    test('Insert NEFT Bank Statement', async () => {
         if (CBM_COLLECTION.neft.mode !== 'NA') {
-            await cbmCashVerificationPage.runNEFTInsert();
-            await page.reload();
+            await test.step('Insert NEFT bank statement (DB) and run NEFT flow', async () => {
+                await cbmCashVerificationPage.runNEFTInsert();
+                await page.reload();
+                await cbmCashVerificationPage.runNEFTFlow();
+            });
         }
-    });
 
-    test('Run NEFT Flow', async () => {
-        if (CBM_COLLECTION.neft.mode !== 'NA') {
-            await cbmCashVerificationPage.runNEFTFlow();
-        }
         await page.waitForTimeout(10000);
     });
 

@@ -8,12 +8,14 @@ export default defineConfig({
   workers: 1,
   reporter: [
     ['html'],
-    ['allure-playwright', { outputFolder: 'allure-results' }]
+    ['allure-playwright', { outputFolder: 'allure-results' }],
+    ['json', { outputFile: 'test-results/results.json' }]
   ],
 
   use: {
     trace: 'on-first-retry',
     headless: false,
+    screenshot: 'on',
     permissions: ['geolocation'],
     geolocation: { latitude: 12.9716, longitude: 77.5946 },
   },

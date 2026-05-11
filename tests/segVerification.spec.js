@@ -1,17 +1,16 @@
-import { SegVerificationPage } from '../pages/segVerificationPage';
-import { LoginPage } from '../pages/LoginPage';
 import { test } from '@playwright/test';
-import { USERS } from '../config/testData.js';
+import { SegVerificationPage } from '../pages/segVerificationPage';
+import { loginAs } from '../utils/auth.js';
+import { SEG } from '../test-data/seg.js';
 
 test.describe.configure({ mode: 'serial' });
 
 test.describe('Seg Verification Flow', () => {
 
-  let page, loginPage, segVerificationPage;
+  let page, segVerificationPage;
 
   test.beforeAll(async ({ browser }) => {
     page = await browser.newPage();
-    loginPage = new LoginPage(page);
     segVerificationPage = new SegVerificationPage(page);
   });
 
@@ -19,37 +18,45 @@ test.describe('Seg Verification Flow', () => {
     await page.close();
   });
 
-  test('Open Login Page', async () => {
-    await loginPage.navigate();
+  test.afterEach(async ({}, testInfo) => {
+    if (process.env.CAPTURE_SCREENSHOTS === 'N') return;
+    if (page && !page.isClosed()) {
+      try {
+        await page.waitForTimeout(1500);
+        const buf = await page.screenshot({ fullPage: true });
+        await testInfo.attach('screenshot', { body: buf, contentType: 'image/png' });
+      } catch (err) {
+        console.log('[afterEach] screenshot failed:', err.message);
+      }
+    }
   });
 
-  test('Fill Email', async () => {
-    await loginPage.emailInput.fill(USERS.seg.email);
-  });
+  test('Verify or reject invoices for current verificationType', async () => {
+    await test.step('Login as Seg', async () => {
+      await loginAs(page, 'seg');
+    });
 
-  test('Fill Password', async () => {
-    await loginPage.passwordInput.fill(USERS.seg.password);
-  });
+    await test.step('Open Verification page', async () => {
+      await segVerificationPage.clickVerification();
+    });
 
-  test('Click Login Button', async () => {
-    await loginPage.loginBtn.click();
-  });
+    if (SEG.verificationType === 'D') {
+      await test.step('Open Deliverer tab and pick delivery row', async () => {
+        await page.waitForTimeout(3000);
+        await segVerificationPage.clickDeliverer();
+        await segVerificationPage.clickDeliveryRow();
+      });
+    } else {
+      await test.step('Pick salesman row and start verification', async () => {
+        await segVerificationPage.clickSalesmanRow();
+        await segVerificationPage.clickStartVerification();
+      });
+    }
 
-  test('Click Verification', async () => {
-    await segVerificationPage.clickVerification();
-  });
-
-  test('Click Salesman Row', async () => {
-    await segVerificationPage.clickSalesmanRow();
-  });
-
-  test('Click Start Verification', async () => {
-    await segVerificationPage.clickStartVerification();
-  });
-
-  test('Run Verification or Rejection Flow', async () => {
-    await segVerificationPage.runFlow();
-    await page.waitForTimeout(5000);
+    await test.step('Run verification or rejection flow', async () => {
+      await segVerificationPage.runFlow();
+      await page.waitForTimeout(5000);
+    });
   });
 
 });

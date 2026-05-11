@@ -1,4 +1,4 @@
-import { OBC } from '../config/testData.js';
+import { SALES_ORDER as OBC } from '../test-data/salesOrder.js';
 import { writeFileSync } from 'fs';
 import { resolve } from 'path';
 
@@ -8,7 +8,7 @@ export class SOUploadPage {
     constructor(page) {
         this.page = page;
 
-        this.adapterUploads = this.page.locator("//span[@class='ant-menu-title-content']//a[normalize-space()='Adapter Uploads']");
+        this.adapterUploads = this.page.getByRole('link', { name: 'Adapter Uploads' });
         this.uploadBtn = this.page.locator("button:has-text('Upload')");
         this.uploadTypeDropdown = this.page.locator("span.ant-select-selection-item");
         this.salesOrderOption = this.page.locator("//div[@title='Sales Order']");
@@ -190,8 +190,8 @@ export class SOUploadPage {
         console.log('Captured SO invoices:', invoices);
     }
     async clickFCDropdown() { await this.fcOption.click(); }
-    async typeBTM() { await this.page.keyboard.type('BTM'); }
-    async selectBTM() { await this.selectedFC.click(); }
+    async typeCMBT() { await this.page.keyboard.type('CMBT'); }
+    async selectCMBT() { await this.selectedFC.click(); }
     async clickBrandDropdown() { await this.brandOption.click(); }
     async typeBRIT() { await this.page.keyboard.type('BRIT'); }
     async selectBritannia() { await this.selectedBrand.click(); }

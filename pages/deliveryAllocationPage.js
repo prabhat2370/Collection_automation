@@ -1,8 +1,31 @@
-import { readFileSync } from 'fs';
-import { DELIVERY } from '../config/testData.js';
+import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { DELIVERY } from '../test-data/deliveryAllocation.js';
 import { resolve } from 'path';
 
 const SO_INVOICES_FILE = resolve(process.cwd(), 'utils/soInvoices.json');
+const COLLECTION_REFS_FILE = resolve(process.cwd(), 'utils/collectionRefs.json');
+
+function generateRandomVehicleNo() {
+    const randomAlpha = () => {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        return chars[Math.floor(Math.random() * 26)] + chars[Math.floor(Math.random() * 26)];
+    };
+    const randomDigits = (n) => {
+        let s = '';
+        for (let i = 0; i < n; i++) s += Math.floor(Math.random() * 10);
+        return s;
+    };
+    return `${randomAlpha()}${randomDigits(2)}${randomAlpha()}${randomDigits(4)}`;
+}
+
+function persistVehicleNo(vehicleNo) {
+    let data = {};
+    if (existsSync(COLLECTION_REFS_FILE)) {
+        try { data = JSON.parse(readFileSync(COLLECTION_REFS_FILE, 'utf-8')); } catch { data = {}; }
+    }
+    data.delivery = { ...(data.delivery || {}), vehicleNo };
+    writeFileSync(COLLECTION_REFS_FILE, JSON.stringify(data, null, 2));
+}
 
 export class DeliveryAllocationPage {
     constructor(page) {
@@ -53,6 +76,9 @@ export class DeliveryAllocationPage {
         await this.page.locator("//div[@title='Adhoc']").click();
         await this.page.locator("div[name='allocation_type'] span[class='ant-select-selection-search']").click();
         await this.page.locator("//div[@title='Eco']").click();
+        DELIVERY.vehicleNo = generateRandomVehicleNo();
+        persistVehicleNo(DELIVERY.vehicleNo);
+        console.log(`[DeliveryAllocation] Generated random vehicle no: ${DELIVERY.vehicleNo} (persisted to utils/collectionRefs.json)`);
         await this.page.locator("//input[@id='vehicle_no']").fill(DELIVERY.vehicleNo);
         await this.page.locator("//input[@id='driver_name']").fill(DELIVERY.driverName);
         await this.page.locator("//input[@id='vendor']").fill(DELIVERY.vendor);

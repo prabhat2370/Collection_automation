@@ -154,15 +154,26 @@ export function readBillNoFromFile(filePath) {
     const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
     if (rows.length < 2) throw new Error(`No data rows in file: ${filePath}`);
 
-    // Detect column by header name — supports Nestlé ("Bill No"), Sunpure/Dabur ("Adjusted Bill No"),
-    // and HUL Samadhan ("Adjusted /Collected Bill No"). "collected bill no" is unique to HUL.
+    // Detect column by header name — most specific patterns first to avoid substring false matches.
+    // Godrej ("CN_Adjusted_Bill_No"), Britannia ("Adj Inv No"), HUL Samadhan ("Adjusted /Collected Bill No"),
+    // Sunpure/Dabur ("Adjusted Bill No"), Nestlé ("Bill No").
     const headers = rows[0].map(h => String(h ?? '').trim().toLowerCase());
-    let colIdx = headers.findIndex(h => h.includes('collected bill no'));
+    let colIdx = headers.findIndex(h => h.includes('cn_adjusted_bill_no'));
+    if (colIdx < 0) colIdx = headers.findIndex(h => h.includes('adj inv no'));
+    if (colIdx < 0) colIdx = headers.findIndex(h => h.includes('collected bill no'));
     if (colIdx < 0) colIdx = headers.findIndex(h => h.includes('adjusted bill no'));
     if (colIdx < 0) colIdx = headers.findIndex(h => h.includes('bill no'));
     if (colIdx < 0) colIdx = 0; // fallback to first column
 
-    const invoiceNo = rows[1]?.[colIdx];
+    // For Britannia, only return rows where CR Status = 'Cleared'.
+    const colCRStatus = headers.findIndex(h => h.includes('cr status'));
+    let pickedRow = rows[1];
+    if (colCRStatus >= 0) {
+        pickedRow = rows.slice(1).find(r => String(r[colCRStatus] ?? '').trim().toLowerCase() === 'cleared');
+        if (!pickedRow) throw new Error(`No row with CR Status = 'Cleared' in file: ${filePath}`);
+    }
+
+    const invoiceNo = pickedRow?.[colIdx];
     if (!invoiceNo) throw new Error(`Could not read Bill No from file: ${filePath}`);
     return String(invoiceNo).trim();
 }
@@ -243,27 +254,33 @@ export function readAllInvoicesFromFile(filePath) {
         return -1;
     };
 
+    // Godrej uses "CN_Adjusted_Bill_No" + "Credit_Note_Number" + "Credit_note_date" + "CN_Adjusted_Amount" (underscored headers)
+    // Britannia uses "Adj Inv No" + "Credit Note No" + "Order Date" + "Net Amount" + filtered by "CR Status = Cleared"
     // HUL Samadhan uses "Adjusted/Collected Bill No" + "CR/DR No." + "Adjusted Amt"
     // Sunpure/Dabur use "Adjusted Bill No" + "Coll Ref No" + "Adjusted Cr/Db Amt"
     // Nestlé uses "Bill No" + "Collection Number" + "Adjusted Cr Amount"
-    const colInvoice    = findCol('collected bill no', 'adjusted bill no', 'bill no');
-    const colBillDate   = findCol('cr/dr date', 'bill date');
-    const colCollNumber = findCol('cr/dr no', 'collection number', 'coll ref');
-    const colCollDate   = findCol('adjusted/collected/cancelled', 'collection date');
-    const colAmount     = findCol('adjusted cr/db', 'adjusted cr amount', 'adjusted cr', 'adjusted amt');
+    // Bill Date is NOT part of the uniqueness combination for any brand.
+    // Most specific patterns first (Godrej underscored → Britannia → HUL → Sunpure → Nestlé).
+    const colInvoice    = findCol('cn_adjusted_bill_no', 'adj inv no', 'collected bill no', 'adjusted bill no', 'bill no');
+    const colCollNumber = findCol('credit_note_number', 'credit note no', 'cr/dr no', 'collection number', 'coll ref');
+    const colCollDate   = findCol('credit_note_date', 'order date', 'adjusted/collected/cancelled', 'collection date');
+    const colAmount     = findCol('cn_adjusted_amount', 'net amount', 'adjusted cr/db', 'adjusted cr amount', 'adjusted cr', 'adjusted amt');
+    const colCRStatus   = findCol('cr status');
 
-    console.log(`[FileRead] Detected columns — invoice:${colInvoice} billDate:${colBillDate} collNumber:${colCollNumber} collDate:${colCollDate} amount:${colAmount}`);
+    console.log(`[FileRead] Detected columns — invoice:${colInvoice} collNumber:${colCollNumber} collDate:${colCollDate} amount:${colAmount} crStatus:${colCRStatus}`);
     console.log(`[FileRead] Headers: [${headers.join(' | ')}]`);
 
     return rows.slice(1)
         .map((row, idx) => ({
             rowIdx: idx + 1,
             invoiceNo:        colInvoice >= 0    ? String(row[colInvoice] ?? '').trim()    : '',
-            billDate:         colBillDate >= 0   ? String(row[colBillDate] ?? '').trim()   : '',
             collectionNumber: colCollNumber >= 0 ? String(row[colCollNumber] ?? '').trim() : '',
             collectionDate:   colCollDate >= 0   ? String(row[colCollDate] ?? '').trim()   : '',
             adjustedCrAmount: colAmount >= 0     ? String(row[colAmount] ?? '').trim()     : '',
+            crStatus:         colCRStatus >= 0   ? String(row[colCRStatus] ?? '').trim()   : '',
         }))
+        // Britannia filter: only rows with CR Status = 'Cleared' are eligible (other formats lack this column → pass through).
+        .filter(r => colCRStatus < 0 || r.crStatus.toLowerCase() === 'cleared')
         .filter(r => r.invoiceNo || r.adjustedCrAmount);
 }
 
