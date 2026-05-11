@@ -1,4 +1,4 @@
-import { CHEQUE_BOUNCE, CBM_COLLECTION } from '../config/testData.js';
+import { CHEQUE_BOUNCE, CBM_COLLECTION } from '../test-data/cbm.js';
 import { insertBankStatement } from '../utils/dbHelper.js';
 
 export class CbmCashVerificationPage {

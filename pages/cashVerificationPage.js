@@ -1,5 +1,6 @@
 import { firstOBCData } from '../utils/excelReader.js';
-import { PAYMENT_MODES } from '../config/testData.js';
+import { PAYMENT_MODES } from '../test-data/cashier.js';
+import { DELIVERY } from '../test-data/deliveryAllocation.js';
 import { insertBankStatement } from '../utils/dbHelper.js';
 import { readFileSync, existsSync } from 'fs';
 import { resolve } from 'path';
@@ -17,7 +18,9 @@ export class CashVerificationPage {
         const { salesman } = firstOBCData;
 
         this.collectionSettlementLink = this.page.locator("//a[normalize-space()='Collection Settlement']");
+        this.delivererTab = this.page.locator(":text('Deliverer')");
         this.salesmanSettle = this.page.locator(`//tr[td[1][contains(., '${salesman}')]]//td[10]//div[@cursor='pointer']`);
+        this.deliveryRow = this.page.locator(`//tr[td[contains(., '${DELIVERY.vehicleNo}')]]//td[12]//div[@cursor='pointer']`);
         this.startVerification = this.page.locator(":text-is('Start Verification')");
         this.cashGreenTick = this.page.locator("//img[@alt='greenTick']");
         this.cashRedClose = this.page.locator("img[alt='redClose']");
@@ -30,7 +33,9 @@ export class CashVerificationPage {
     }
 
     async clickCollectionSettlement() { await this.collectionSettlementLink.click(); }
+    async clickDeliverer() { await this.delivererTab.click(); }
     async clickSalesmanSettle() { await this.salesmanSettle.click(); }
+    async clickDeliveryRow() { await this.deliveryRow.click(); }
     async clickStartVerification() { await this.startVerification.click(); }
 
     // Wait for page to settle and loader to hide before interacting

@@ -18,7 +18,7 @@ export class ReturnToFCPage {
         this.logisticsManagement = this.page.locator("//span[normalize-space()='Logistics Management']");
         this.returnToFC = this.page.locator("//a[normalize-space()='Return to FC']");
         this.eyeIcon = (vehicleNo) => this.page.locator(`//tr[td[contains(., '${vehicleNo}')]]//a[contains(@href, 'return-to-fc-new')]`);
-        this.deliveryStatusDropdown = (invoice) => this.page.locator(`//tr[td[contains(., '${invoice}')]]//td[7]//div[contains(@class,'ant-select-selector')]`);
+        this.deliveryStatusDropdown = (invoice) => this.page.locator(`//tr[td[contains(., '${invoice}')]]//td[8]//div[contains(@class,'ant-select-selector')]`);
         this.statusOption = (text) => this.page.locator(`//div[contains(@class,'ant-select-item-option') and @title='${text}']`);
         this.okBtn = this.page.locator(":text('OK')");
         this.yesBtn = this.page.locator(":text('Yes')");
@@ -58,18 +58,22 @@ export class ReturnToFCPage {
     async processAllInvoicesFlow(statusCode, collection) {
         const invoices = JSON.parse(readFileSync(SO_INVOICES_FILE, 'utf-8'));
         const statusText = STATUS_MAP[statusCode];
-        const rfcShowUrl = this.page.url(); // save RFC show URL to navigate back each time
+        this.rfcShowUrl = this.page.url(); // save for verifyAllInvoices to navigate back
+        const rfcShowUrl = this.rfcShowUrl;
 
         for (const invoice of invoices) {
             console.log(`\n--- Processing invoice: ${invoice} | status: ${statusText} ---`);
 
             // Navigate back to RFC show page
-            await this.page.goto(rfcShowUrl, { waitUntil: 'networkidle' });
-            await this.page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-            await this.page.waitForTimeout(1500);
+            await this.page.goto(rfcShowUrl, { waitUntil: 'load' });
+            await this.page.waitForTimeout(2000);
 
-            // Set delivery status for this invoice
-            await this.deliveryStatusDropdown(invoice).click();
+            // Scroll to the invoice row's delivery dropdown and click
+            const dropdown = this.deliveryStatusDropdown(invoice);
+            await dropdown.waitFor({ state: 'visible', timeout: 15000 });
+            await dropdown.scrollIntoViewIfNeeded();
+            await this.page.waitForTimeout(500);
+            await dropdown.click();
             await this.page.waitForTimeout(500);
             await this.statusOption(statusText).click();
             await this.page.waitForTimeout(1500);
@@ -171,6 +175,10 @@ export class ReturnToFCPage {
 
     async verifyAllInvoices() {
         const invoices = JSON.parse(readFileSync(SO_INVOICES_FILE, 'utf-8'));
+        if (this.rfcShowUrl) {
+            await this.page.goto(this.rfcShowUrl, { waitUntil: 'load' });
+            await this.page.waitForTimeout(2000);
+        }
         for (const invoice of invoices) {
             console.log(`\n--- Verifying invoice: ${invoice} ---`);
             const icon = this.checkIcon(invoice);

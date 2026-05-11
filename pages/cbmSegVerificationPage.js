@@ -1,4 +1,4 @@
-import { CHEQUE_BOUNCE, CBM_SEG } from '../config/testData.js';
+import { CHEQUE_BOUNCE, CBM_SEG } from '../test-data/cbm.js';
 
 export class CbmSegVerificationPage {
     /**

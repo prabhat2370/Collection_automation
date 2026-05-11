@@ -1,17 +1,15 @@
 import { test } from '@playwright/test';
-import { LoginPage } from '../pages/LoginPage';
 import { CbmSegVerificationPage } from '../pages/cbmSegVerificationPage';
-import { USERS } from '../config/testData.js';
+import { loginAs } from '../utils/auth.js';
 
 test.describe.configure({ mode: 'serial' });
 
 test.describe('CBM Seg Verification Flow', () => {
 
-    let page, loginPage, cbmSegVerificationPage;
+    let page, cbmSegVerificationPage;
 
     test.beforeAll(async ({ browser }) => {
         page = await browser.newPage();
-        loginPage = new LoginPage(page);
         cbmSegVerificationPage = new CbmSegVerificationPage(page);
     });
 
@@ -19,37 +17,37 @@ test.describe('CBM Seg Verification Flow', () => {
         await page.close();
     });
 
-    test('Open Login Page', async () => {
-        await loginPage.navigate();
+    test.afterEach(async ({}, testInfo) => {
+        if (process.env.CAPTURE_SCREENSHOTS === 'N') return;
+        if (page && !page.isClosed()) {
+            try {
+                await page.waitForTimeout(1500);
+                const buf = await page.screenshot({ fullPage: true });
+                await testInfo.attach('screenshot', { body: buf, contentType: 'image/png' });
+            } catch (err) {
+                console.log('[afterEach] screenshot failed:', err.message);
+            }
+        }
     });
 
-    test('Fill Email', async () => {
-        await loginPage.emailInput.fill(USERS.seg.email);
-    });
+    test('CBM Seg verification', async () => {
+        await test.step('Login as Seg', async () => {
+            await loginAs(page, 'seg');
+        });
 
-    test('Fill Password', async () => {
-        await loginPage.passwordInput.fill(USERS.seg.password);
-    });
+        await test.step('Open Cheque Bounce Verification list', async () => {
+            await cbmSegVerificationPage.clickChequeBounceMenu();
+            await cbmSegVerificationPage.clickVerification();
+        });
 
-    test('Click Login Button', async () => {
-        await loginPage.loginBtn.click();
-    });
+        await test.step('Pick ready-for-verification row', async () => {
+            await cbmSegVerificationPage.clickReadyForVerification();
+        });
 
-    test('Click Cheque Bounce Menu', async () => {
-        await cbmSegVerificationPage.clickChequeBounceMenu();
-    });
-
-    test('Click Verification', async () => {
-        await cbmSegVerificationPage.clickVerification();
-    });
-
-    test('Click Ready For Verification', async () => {
-        await cbmSegVerificationPage.clickReadyForVerification();
-    });
-
-    test('Run Verification Flow', async () => {
-        await cbmSegVerificationPage.runFlow();
-        await page.waitForTimeout(10000);
+        await test.step('Run verification flow', async () => {
+            await cbmSegVerificationPage.runFlow();
+            await page.waitForTimeout(10000);
+        });
     });
 
 });

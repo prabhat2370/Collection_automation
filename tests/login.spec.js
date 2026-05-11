@@ -1,6 +1,6 @@
 import { test } from '@playwright/test';
 import { LoginPage } from '../pages/LoginPage';
-import { USERS } from '../config/testData.js';
+import { loginAs } from '../utils/auth.js';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -17,20 +17,21 @@ test.describe('Login & Logout Flow', () => {
     await page.close();
   });
 
-  test('Open Login Page', async () => {
-    await loginPage.navigate();
+  test.afterEach(async ({}, testInfo) => {
+    if (process.env.CAPTURE_SCREENSHOTS === 'N') return;
+    if (page && !page.isClosed()) {
+      try {
+        await page.waitForTimeout(1500);
+        const buf = await page.screenshot({ fullPage: true });
+        await testInfo.attach('screenshot', { body: buf, contentType: 'image/png' });
+      } catch (err) {
+        console.log('[afterEach] screenshot failed:', err.message);
+      }
+    }
   });
 
-  test('Fill Email', async () => {
-    await loginPage.emailInput.fill(USERS.obc.email);
-  });
-
-  test('Fill Password', async () => {
-    await loginPage.passwordInput.fill(USERS.obc.password);
-  });
-
-  test('Click Login Button', async () => {
-    await loginPage.loginBtn.click();
+  test('Login as OBC admin', async () => {
+    await loginAs(page, 'obc');
   });
 
   test('Logout', async () => {

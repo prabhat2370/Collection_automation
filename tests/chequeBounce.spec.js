@@ -1,17 +1,16 @@
 import { test } from '@playwright/test';
-import { LoginPage } from '../pages/LoginPage';
 import { ChequeBouncePage } from '../pages/cbmPage';
-import { USERS, CHEQUE_BOUNCE, CBM_UPLOAD_FILES } from '../config/testData.js';
+import { loginAs, logout } from '../utils/auth.js';
+import { CHEQUE_BOUNCE, CBM_UPLOAD_FILES } from '../test-data/cbm.js';
 
 test.describe.configure({ mode: 'serial' });
 
 test.describe('Cheque Bounce Flow', () => {
 
-    let page, loginPage, chequeBouncePage;
+    let page, chequeBouncePage;
 
     test.beforeAll(async ({ browser }) => {
         page = await browser.newPage();
-        loginPage = new LoginPage(page);
         chequeBouncePage = new ChequeBouncePage(page);
     });
 
@@ -19,171 +18,103 @@ test.describe('Cheque Bounce Flow', () => {
         await page.close();
     });
 
-    test('Open Login Page', async () => {
-        await loginPage.navigate();
+    test.afterEach(async ({}, testInfo) => {
+        if (process.env.CAPTURE_SCREENSHOTS === 'N') return;
+        if (page && !page.isClosed()) {
+            try {
+                await page.waitForTimeout(1500);
+                const buf = await page.screenshot({ fullPage: true });
+                await testInfo.attach('screenshot', { body: buf, contentType: 'image/png' });
+            } catch (err) {
+                console.log('[afterEach] screenshot failed:', err.message);
+            }
+        }
     });
 
-    test('Fill Email', async () => {
-        await loginPage.emailInput.fill(USERS.obc.email);
+    test('Admin: Add cheque bounce and map invoice', async () => {
+        await test.step('Login as OBC admin', async () => {
+            await loginAs(page, 'obc');
+        });
+
+        await test.step('Open Cheque Bounce list and add new', async () => {
+            await chequeBouncePage.clickChequeBounceMenu();
+            await chequeBouncePage.clickChequeBounceList();
+            await chequeBouncePage.clickAddChequeBounce();
+        });
+
+        await test.step('Fill cheque number and map FC', async () => {
+            await chequeBouncePage.fillChequeNumber(CHEQUE_BOUNCE.chequeBounceNo);
+            await chequeBouncePage.clickInvoiceMapping();
+            await chequeBouncePage.clickFCCheckbox();
+        });
+
+        await test.step('Submit and confirm', async () => {
+            await chequeBouncePage.clickSubmitAndClose();
+            await chequeBouncePage.clickYes();
+        });
+
+        await test.step('Logout admin', async () => {
+            await logout(page);
+        });
     });
 
-    test('Fill Password', async () => {
-        await loginPage.passwordInput.fill(USERS.obc.password);
+    test('Cashier: Mark bounce and handover', async () => {
+        await test.step('Login as Cashier', async () => {
+            await loginAs(page, 'cash');
+        });
+
+        await test.step('Open Mark Bounce form', async () => {
+            await chequeBouncePage.clickChequeBounceMenu();
+            await chequeBouncePage.clickMarkBounce();
+        });
+
+        await test.step('Pick cheque row and select reason', async () => {
+            await chequeBouncePage.clickChequeRowImg();
+            await chequeBouncePage.clickCBMReason();
+        });
+
+        await test.step('Upload supporting docs and submit', async () => {
+            await chequeBouncePage.uploadDocuments(CBM_UPLOAD_FILES);
+            await chequeBouncePage.clickSubmit();
+            await page.waitForTimeout(5000);
+        });
+
+        await test.step('Open Handover tab and trigger action', async () => {
+            await chequeBouncePage.clickHandoverTab();
+            await chequeBouncePage.clickHandoverActionImg();
+        });
+
+        await test.step('Assign segregator', async () => {
+            await chequeBouncePage.clickChooseSegregator();
+            await chequeBouncePage.clickSegregatorOption();
+            await chequeBouncePage.clickAssignCheque();
+            await chequeBouncePage.clickModalClose();
+        });
+
+        await test.step('Logout cashier', async () => {
+            await logout(page);
+        });
     });
 
-    test('Click Login Button', async () => {
-        await loginPage.loginBtn.click();
-    });
+    test('Seg: Acknowledge bounce and assign officer', async () => {
+        await test.step('Login as Seg', async () => {
+            await loginAs(page, 'seg');
+        });
 
-    test('Click Cheque Bounce Menu', async () => {
-        await chequeBouncePage.clickChequeBounceMenu();
-    });
+        await test.step('Acknowledge handover and submit', async () => {
+            await chequeBouncePage.clickAcknowledgeNow();
+            await chequeBouncePage.clickConfirmYes();
+            await chequeBouncePage.clickSubmit2();
+        });
 
-    test('Click Cheque Bounce List', async () => {
-        await chequeBouncePage.clickChequeBounceList();
-    });
-
-    test('Click Add Cheque Bounce', async () => {
-        await chequeBouncePage.clickAddChequeBounce();
-    });
-
-    test('Fill Cheque Number', async () => {
-        await chequeBouncePage.fillChequeNumber(CHEQUE_BOUNCE.chequeBounceNo);
-    });
-
-    test('Click Invoice Mapping', async () => {
-        await chequeBouncePage.clickInvoiceMapping();
-        
-    });
-
-    test('Select FC Checkbox', async () => {
-        await chequeBouncePage.clickFCCheckbox();
-    });
-
-    test('Click Submit and Close', async () => {
-        await chequeBouncePage.clickSubmitAndClose();
-    });
-
-    test('Click Yes', async () => {
-        await chequeBouncePage.clickYes();
-    });
-
-    test('Logout Admin', async () => {
-        await loginPage.logout();
-    });
-
-    test('Login as Cashier - Fill Email', async () => {
-        await loginPage.emailInput.fill(USERS.cash.email);
-    });
-
-    test('Login as Cashier - Fill Password', async () => {
-        await loginPage.passwordInput.fill(USERS.cash.password);
-    });
-
-    test('Login as Cashier - Click Login', async () => {
-        await loginPage.loginBtn.click();
-        
-    });
-
-    test('Click Cheque Bounce Menu (Cashier)', async () => {
-        await chequeBouncePage.clickChequeBounceMenu();
-    });
-
-    test('Click Mark Bounce', async () => {
-        await chequeBouncePage.clickMarkBounce();
-    });
-
-    
-
-    test('Click Cheque Row', async () => {
-        await chequeBouncePage.clickChequeRowImg();
-    });
-
-    test('Select CBM Reason', async () => {
-        await chequeBouncePage.clickCBMReason();
-    });
-
-    test('Upload Documents', async () => {
-        await chequeBouncePage.uploadDocuments(CBM_UPLOAD_FILES);
-    });
-
-    test('Click Submit', async () => {
-        await chequeBouncePage.clickSubmit();
-        await page.waitForTimeout(5000);
-    });
-
-
-    test('Click Handover Tab', async () => {
-        await chequeBouncePage.clickHandoverTab();
-    });
-
-    test('Click Handover Action Image', async () => {
-        await chequeBouncePage.clickHandoverActionImg();
-    });
-
-    test('Click Choose Segregator', async () => {
-        await chequeBouncePage.clickChooseSegregator();
-    });
-
-    test('Click Segregator Option', async () => {
-        await chequeBouncePage.clickSegregatorOption();
-    });
-
-    test('Click Assign Cheque', async () => {
-        await chequeBouncePage.clickAssignCheque();
-    });
-
-    test('Click Close', async () => {
-        await chequeBouncePage.clickModalClose();
-    });
-
-    test('Logout Cashier', async () => {
-        await loginPage.logout();
-    });
-
-    test('Login as Seg - Fill Email', async () => {
-        await loginPage.emailInput.fill(USERS.seg.email);
-    });
-
-    test('Login as Seg - Fill Password', async () => {
-        await loginPage.passwordInput.fill(USERS.seg.password);
-    });
-
-    test('Login as Seg - Click Login', async () => {
-        await loginPage.loginBtn.click();
-    });
-
-    test('Click Acknowledge Now', async () => {
-        await chequeBouncePage.clickAcknowledgeNow();
-    });
-
-    test('Click Yes (Seg)', async () => {
-        await chequeBouncePage.clickConfirmYes();
-    });
-
-    test('Click Submit (Seg)', async () => {
-        await chequeBouncePage.clickSubmit2();
-    });
-
-    test('Click Summary Action Icon', async () => {
-        await chequeBouncePage.clickSummaryActionSvg();
-    });
-
-    test('Click Choose Officer', async () => {
-        await chequeBouncePage.clickChooseOfficer();
-    });
-
-    test('Click Officer Option', async () => {
-        await chequeBouncePage.clickOfficerOption();
-    });
-
-    test('Click Assign Cheque (Officer)', async () => {
-        await chequeBouncePage.clickAssignCheque2();
-    });
-
-    test('Click Close (Officer)', async () => {
-        await chequeBouncePage.clickModalClose();
-        await page.waitForTimeout(10000);
+        await test.step('Open summary and assign officer', async () => {
+            await chequeBouncePage.clickSummaryActionSvg();
+            await chequeBouncePage.clickChooseOfficer();
+            await chequeBouncePage.clickOfficerOption();
+            await chequeBouncePage.clickAssignCheque2();
+            await chequeBouncePage.clickModalClose();
+            await page.waitForTimeout(10000);
+        });
     });
 
 });

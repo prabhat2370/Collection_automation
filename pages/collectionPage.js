@@ -1,4 +1,5 @@
-import { URLS, BANKS, CONFIRMATION } from '../config/testData.js';
+import { URLS } from '../test-data/urls.js';
+import { BANKS, CONFIRMATION } from '../test-data/collection.js';
 import { writeFileSync, existsSync, readFileSync } from 'fs';
 import { resolve } from 'path';
 

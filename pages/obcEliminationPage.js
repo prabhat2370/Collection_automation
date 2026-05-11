@@ -1,4 +1,4 @@
-import { OBC_ELIMINATION } from '../config/testData.js';
+import { OBC_ELIMINATION } from '../test-data/creditUpload.js';
 
 export class ObcEliminationPage {
     /**
@@ -32,11 +32,12 @@ export class ObcEliminationPage {
         this.uploadTypeOption = this.page.locator(`//div[@title='${uploadType}']`);
 
         // ── Upload modal — FC(s) dropdown ────────────────────────────────────
-        this.fcDropdown = this.page.locator('div').filter({ hasText: /^Fc Type$/ }).nth(4);
+        const modal = this.page.locator('.ant-modal-content');
+        this.fcDropdown = modal.locator('div').filter({ hasText: /^Fc Type$/ }).first();
         this.selectedFC = this.page.getByText(this.config.fc, { exact: true });
 
         // ── Upload modal — Brand dropdown ────────────────────────────────────
-        this.brandDropdown = this.page.locator('div').filter({ hasText: /^Select Brand$/ }).nth(4);
+        this.brandDropdown = modal.locator('div').filter({ hasText: /^Select Brand$/ }).first();
         this.selectedBrand = this.page.getByText(this.config.brand, { exact: true });
 
         // ── Upload modal — file upload button ────────────────────────────────
@@ -79,12 +80,27 @@ export class ObcEliminationPage {
     async clickUploadTypeDropdown() { await this.uploadTypeDropdown.click(); }
     async selectUploadType() { await this.uploadTypeOption.click(); }
 
-    async clickFCDropdown() { await this.fcDropdown.click(); }
-    async typeFC() { await this.page.keyboard.type(this.config.fcSearchText); }
+    async clickFCDropdown() {
+        // 2nd .ant-select-selector in modal body: 0=Upload Type, 1=FC(s), 2=Brand
+        await this.page.locator('.ant-modal-body .ant-select-selector').nth(1).click();
+        await this.page.waitForTimeout(300);
+    }
+    async typeFC() {
+        const input = this.page.locator('.ant-select-dropdown:visible input').last();
+        await input.waitFor({ state: 'visible', timeout: 5000 });
+        await input.fill(this.config.fcSearchText);
+    }
     async selectFC() { await this.selectedFC.click(); }
 
-    async clickBrandDropdown() { await this.brandDropdown.click(); }
-    async typeBrand() { await this.page.keyboard.type(this.config.brandSearchText); }
+    async clickBrandDropdown() {
+        await this.page.locator('.ant-modal-body .ant-select-selector').nth(2).click();
+        await this.page.waitForTimeout(300);
+    }
+    async typeBrand() {
+        const input = this.page.locator('.ant-select-dropdown:visible input').last();
+        await input.waitFor({ state: 'visible', timeout: 5000 });
+        await input.fill(this.config.brandSearchText);
+    }
     async selectBrand() { await this.selectedBrand.click(); }
 
     async uploadCollectionReport(filePath) {

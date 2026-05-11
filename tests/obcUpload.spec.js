@@ -1,18 +1,16 @@
-import { ObcUpload } from '../pages/obcUpload';
-import { LoginPage } from '../pages/LoginPage';
 import { test } from '@playwright/test';
-import { USERS, FILE_PATHS } from '../config/testData.js';
+import { ObcUpload } from '../pages/obcUpload';
+import { loginAs } from '../utils/auth.js';
+import { OBC_UPLOAD_FILE } from '../test-data/obcUpload.js';
 
 test.describe.configure({ mode: 'serial' });
 
 test.describe('OBC Upload', () => {
 
-  let page, loginPage, obcupload;
-  const filePath = FILE_PATHS.obcFile;
+  let page, obcupload;
 
   test.beforeAll(async ({ browser }) => {
     page = await browser.newPage();
-    loginPage = new LoginPage(page);
     obcupload = new ObcUpload(page);
   });
 
@@ -20,98 +18,61 @@ test.describe('OBC Upload', () => {
     await page.close();
   });
 
-  test('Open Login Page', async () => {
-    await loginPage.navigate();
+  test.afterEach(async ({}, testInfo) => {
+    if (process.env.CAPTURE_SCREENSHOTS === 'N') return;
+    if (page && !page.isClosed()) {
+      try {
+        await page.waitForTimeout(1500);
+        const buf = await page.screenshot({ fullPage: true });
+        await testInfo.attach('screenshot', { body: buf, contentType: 'image/png' });
+      } catch (err) {
+        console.log('[afterEach] screenshot failed:', err.message);
+      }
+    }
   });
 
-  test('Fill Email', async () => {
-    await loginPage.emailInput.fill(USERS.obc.email);
-  });
+  test('Upload OBC file for CMBT/Britannia', async () => {
+    test.setTimeout(120000);
 
-  test('Fill Password', async () => {
-    await loginPage.passwordInput.fill(USERS.obc.password);
-  });
+    await test.step('Login as OBC admin', async () => {
+      await loginAs(page, 'obc');
+    });
 
-  test('Click Login Button', async () => {
-    await loginPage.loginBtn.click();
-  });
+    await test.step('Open upload form and select OBC type', async () => {
+      await obcupload.clickAdapterUploads();
+      await obcupload.clickUpload();
+      await obcupload.clickUploadTypeDropdown();
+      await obcupload.clickOBCOption();
+    });
 
-  test('Click Adapter Uploads', async () => {
-    await obcupload.clickAdapterUploads();
-  });
+    await test.step('Select FC = CMBT, Brand = Britannia', async () => {
+      await obcupload.clickFCDropdown();
+      await obcupload.typeCMBT();
+      await obcupload.selectCMBT();
+      await obcupload.clickBrandDropdown();
+      await obcupload.typeBRIT();
+      await obcupload.selectBritannia();
+    });
 
-  test('Click Upload Button', async () => {
-    await obcupload.clickUpload();
-  });
+    await test.step('Upload file and submit', async () => {
+      await obcupload.uploadFileAction(OBC_UPLOAD_FILE);
+      await obcupload.clickSubmit();
+    });
 
-  test('Click Upload Type Dropdown', async () => {
-    await obcupload.clickUploadTypeDropdown();
-  });
+    await test.step('Filter status list by OBC and search', async () => {
+      await obcupload.clickSelectFileTypeDropdown();
+      await obcupload.clickOBCOption();
+      await obcupload.clickSearch();
+      await page.waitForTimeout(6000);
+      await obcupload.clickSearch();
+      await page.waitForTimeout(3000);
+    });
 
-  test('Select OBC', async () => {
-    await obcupload.clickOBCOption();
-  });
-
-  test('Click FC Dropdown', async () => {
-    await obcupload.clickFCDropdown();
-  });
-
-  test('Type BTM', async () => {
-    await obcupload.typeBTM();
-  });
-
-  test('Select BTM', async () => {
-    await obcupload.selectBTM();
-  });
-
-  test('Click Brand Dropdown', async () => {
-    await obcupload.clickBrandDropdown();
-  });
-
-  test('Type BRIT', async () => {
-    await obcupload.typeBRIT();
-  });
-
-  test('Select Britannia', async () => {
-    await obcupload.selectBritannia();
-  });
-
-  test('Upload File', async () => {
-    await obcupload.uploadFileAction(filePath);
-  });
-
-  test('Click Submit', async () => {
-    await obcupload.clickSubmit();
-  });
-
-  test('Click Select File Type Dropdown', async () => {
-    await obcupload.clickSelectFileTypeDropdown();
-  });
-
-  test('Click OBC Option', async () => {
-    await obcupload.clickOBCOption();
-  });
-
-  test('Click Search (1st)', async () => {
-    await obcupload.clickSearch();
-    await page.waitForTimeout(6000);
-  });
-
-  test('Click Search (2nd)', async () => {
-    await obcupload.clickSearch();
-    await page.waitForTimeout(3000);
-
-  });
-
-  test('Click Status Icon', async () => {
-    await obcupload.clickStatusIcon();
-    await page.waitForTimeout(2000);
-
-  });
-
-  test('Click Close Button', async () => {
-    await obcupload.clickClose();
-    await page.waitForTimeout(5000);
+    await test.step('Open status detail and close', async () => {
+      await obcupload.clickStatusIcon();
+      await page.waitForTimeout(2000);
+      await obcupload.clickClose();
+    });
   });
 
 });

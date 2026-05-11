@@ -1,7 +1,7 @@
 import { ObcEliminationPage } from '../pages/obcEliminationPage.js';
-import { LoginPage } from '../pages/LoginPage.js';
 import { test, expect } from '@playwright/test';
-import { USERS, OBC_ELIMINATION } from '../config/testData.js';
+import { loginAs } from '../utils/auth.js';
+import { OBC_ELIMINATION } from '../test-data/creditUpload.js';
 import {
     getChampFcBrandsConfig,
     getObcAdjustmentEntry,
@@ -44,15 +44,27 @@ const runtime = {
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe(`OBC Elimination [${CFG.brand}] — Happy Path`, () => {
 
-    let page, loginPage, obcPage;
+    let page, obcPage;
 
     test.beforeAll(async ({ browser }) => {
         page = await browser.newPage();
-        loginPage = new LoginPage(page);
         obcPage = new ObcEliminationPage(page, CFG);
     });
 
     test.afterAll(async () => { await page.close(); });
+
+    test.afterEach(async ({}, testInfo) => {
+        if (process.env.CAPTURE_SCREENSHOTS === 'N') return;
+        if (page && !page.isClosed()) {
+            try {
+                await page.waitForTimeout(1500);
+                const buf = await page.screenshot({ fullPage: true });
+                await testInfo.attach('screenshot', { body: buf, contentType: 'image/png' });
+            } catch (err) {
+                console.log('[afterEach] screenshot failed:', err.message);
+            }
+        }
+    });
 
     test(`DB Pre-check: obc_adjustment_date is set for fc=${CFG.fcId} + brand=${CFG.brandId}`, async () => {
         const config = await getChampFcBrandsConfig(CFG.fcId, CFG.brandId);
@@ -64,6 +76,7 @@ test.describe(`OBC Elimination [${CFG.brand}] — Happy Path`, () => {
     });
 
     test('Setup: load invoice and capture DB state', async () => {
+        test.setTimeout(180000);
         runtime.collectionDate   = formatDateDMY();
         runtime.collectionDateDB = toDBDate(runtime.collectionDate);
         runtime.billDate         = formatDateDMY();
@@ -121,37 +134,38 @@ test.describe(`OBC Elimination [${CFG.brand}] — Happy Path`, () => {
         }
     });
 
-    // ── UI upload flow ───────────────────────────────────────────────────────
-    test('Open Login Page', async () => { await loginPage.navigate(); });
-    test('Fill Email', async () => { await loginPage.emailInput.fill(USERS.obc.email); });
-    test('Fill Password', async () => { await loginPage.passwordInput.fill(USERS.obc.password); });
-    test('Click Login Button', async () => { await loginPage.loginBtn.click(); });
+    test('Login and upload Collection Report', async () => {
+        await test.step('Login as OBC admin', async () => {
+            await loginAs(page, 'obc');
+        });
 
-    test('Click Adapter Uploads', async () => { await obcPage.clickAdapterUploads(); });
-    test('Click Upload Button', async () => { await obcPage.clickUpload(); });
+        await test.step('Open upload form', async () => {
+            await obcPage.clickAdapterUploads();
+            await obcPage.clickUpload();
+        });
 
-    test('Select Upload Type', async () => {
-        await obcPage.clickUploadTypeDropdown();
-        await obcPage.selectUploadType();
+        await test.step('Select Upload Type', async () => {
+            await obcPage.clickUploadTypeDropdown();
+            await obcPage.selectUploadType();
+        });
+
+        await test.step('Select FC', async () => {
+            await obcPage.clickFCDropdown();
+            await obcPage.typeFC();
+            await obcPage.selectFC();
+        });
+
+        await test.step('Select Brand', async () => {
+            await obcPage.clickBrandDropdown();
+            await obcPage.typeBrand();
+            await obcPage.selectBrand();
+        });
+
+        await test.step('Upload Collection Report and submit', async () => {
+            await obcPage.uploadCollectionReport(FILE);
+            await obcPage.clickSubmit();
+        });
     });
-
-    test('Select FC', async () => {
-        await obcPage.clickFCDropdown();
-        await obcPage.typeFC();
-        await obcPage.selectFC();
-    });
-
-    test('Select Brand', async () => {
-        await obcPage.clickBrandDropdown();
-        await obcPage.typeBrand();
-        await obcPage.selectBrand();
-    });
-
-    test('Upload Collection Report', async () => {
-        await obcPage.uploadCollectionReport(FILE);
-    });
-
-    test('Click Submit', async () => { await obcPage.clickSubmit(); });
 
     test('Wait for Fully Processed and Open View', async () => {
         test.setTimeout(150000);
@@ -544,47 +558,61 @@ async function runAllDbChecks(invoiceNo, amount, beforeState, aggregate) {
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe.skip(`OBC Elimination [${CFG.brand}] — Duplicate Detection`, () => {
 
-    let page, loginPage, obcPage;
+    let page, obcPage;
 
     test.beforeAll(async ({ browser }) => {
         page = await browser.newPage();
-        loginPage = new LoginPage(page);
         obcPage = new ObcEliminationPage(page, CFG);
     });
 
     test.afterAll(async () => { await page.close(); });
 
-    test('Open Login Page', async () => { await loginPage.navigate(); });
-    test('Fill Email', async () => { await loginPage.emailInput.fill(USERS.obc.email); });
-    test('Fill Password', async () => { await loginPage.passwordInput.fill(USERS.obc.password); });
-    test('Click Login Button', async () => { await loginPage.loginBtn.click(); });
-
-    test('Click Adapter Uploads', async () => { await obcPage.clickAdapterUploads(); });
-    test('Click Upload Button', async () => { await obcPage.clickUpload(); });
-
-    test('Select Upload Type', async () => {
-        await obcPage.clickUploadTypeDropdown();
-        await obcPage.selectUploadType();
+    test.afterEach(async ({}, testInfo) => {
+        if (process.env.CAPTURE_SCREENSHOTS === 'N') return;
+        if (page && !page.isClosed()) {
+            try {
+                await page.waitForTimeout(1500);
+                const buf = await page.screenshot({ fullPage: true });
+                await testInfo.attach('screenshot', { body: buf, contentType: 'image/png' });
+            } catch (err) {
+                console.log('[afterEach] screenshot failed:', err.message);
+            }
+        }
     });
 
-    test('Select FC', async () => {
-        await obcPage.clickFCDropdown();
-        await obcPage.typeFC();
-        await obcPage.selectFC();
-    });
+    test('Login and re-upload same Collection Report', async () => {
+        await test.step('Login as OBC admin', async () => {
+            await loginAs(page, 'obc');
+        });
 
-    test('Select Brand', async () => {
-        await obcPage.clickBrandDropdown();
-        await obcPage.typeBrand();
-        await obcPage.selectBrand();
-    });
+        await test.step('Open upload form', async () => {
+            await obcPage.clickAdapterUploads();
+            await obcPage.clickUpload();
+        });
 
-    test('Re-upload same Collection Report', async () => {
-        console.log(`Re-uploading for invoice: ${runtime.invoiceNo}`);
-        await obcPage.uploadCollectionReport(FILE);
-    });
+        await test.step('Select Upload Type', async () => {
+            await obcPage.clickUploadTypeDropdown();
+            await obcPage.selectUploadType();
+        });
 
-    test('Click Submit', async () => { await obcPage.clickSubmit(); });
+        await test.step('Select FC', async () => {
+            await obcPage.clickFCDropdown();
+            await obcPage.typeFC();
+            await obcPage.selectFC();
+        });
+
+        await test.step('Select Brand', async () => {
+            await obcPage.clickBrandDropdown();
+            await obcPage.typeBrand();
+            await obcPage.selectBrand();
+        });
+
+        await test.step('Re-upload same Collection Report and submit', async () => {
+            console.log(`Re-uploading for invoice: ${runtime.invoiceNo}`);
+            await obcPage.uploadCollectionReport(FILE);
+            await obcPage.clickSubmit();
+        });
+    });
 
     test('Wait for Fully Processed and Open View', async () => {
         test.setTimeout(150000);
@@ -609,16 +637,28 @@ test.describe.skip(`OBC Elimination [${CFG.brand}] — Duplicate Detection`, () 
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe.skip(`OBC Elimination [${CFG.brand}] — Zero Amount Skipped`, () => {
 
-    let page, loginPage, obcPage;
+    let page, obcPage;
     let zeroAmtCollectionNumber;
 
     test.beforeAll(async ({ browser }) => {
         page = await browser.newPage();
-        loginPage = new LoginPage(page);
         obcPage = new ObcEliminationPage(page, CFG);
     });
 
     test.afterAll(async () => { await page.close(); });
+
+    test.afterEach(async ({}, testInfo) => {
+        if (process.env.CAPTURE_SCREENSHOTS === 'N') return;
+        if (page && !page.isClosed()) {
+            try {
+                await page.waitForTimeout(1500);
+                const buf = await page.screenshot({ fullPage: true });
+                await testInfo.attach('screenshot', { body: buf, contentType: 'image/png' });
+            } catch (err) {
+                console.log('[afterEach] screenshot failed:', err.message);
+            }
+        }
+    });
 
     test('Generate zero-amount file', async () => {
         zeroAmtCollectionNumber = generateCollectionNumber();
@@ -632,40 +672,43 @@ test.describe.skip(`OBC Elimination [${CFG.brand}] — Zero Amount Skipped`, () 
         });
     });
 
-    test('Open Login Page', async () => { await loginPage.navigate(); });
-    test('Fill Email', async () => { await loginPage.emailInput.fill(USERS.obc.email); });
-    test('Fill Password', async () => { await loginPage.passwordInput.fill(USERS.obc.password); });
-    test('Click Login Button', async () => { await loginPage.loginBtn.click(); });
+    test('Login and upload zero-amount Collection Report', async () => {
+        await test.step('Login as OBC admin', async () => {
+            await loginAs(page, 'obc');
+        });
 
-    test('Click Adapter Uploads', async () => { await obcPage.clickAdapterUploads(); });
-    test('Click Upload Button', async () => { await obcPage.clickUpload(); });
+        await test.step('Open upload form', async () => {
+            await obcPage.clickAdapterUploads();
+            await obcPage.clickUpload();
+        });
 
-    test('Select Upload Type', async () => {
-        await obcPage.clickUploadTypeDropdown();
-        await obcPage.selectUploadType();
+        await test.step('Select Upload Type', async () => {
+            await obcPage.clickUploadTypeDropdown();
+            await obcPage.selectUploadType();
+        });
+
+        await test.step('Select FC', async () => {
+            await obcPage.clickFCDropdown();
+            await obcPage.typeFC();
+            await obcPage.selectFC();
+        });
+
+        await test.step('Select Brand', async () => {
+            await obcPage.clickBrandDropdown();
+            await obcPage.typeBrand();
+            await obcPage.selectBrand();
+        });
+
+        await test.step('Upload zero-amount Collection Report and submit', async () => {
+            await obcPage.uploadCollectionReport(FILE);
+            await obcPage.clickSubmit();
+        });
     });
-
-    test('Select FC', async () => {
-        await obcPage.clickFCDropdown();
-        await obcPage.typeFC();
-        await obcPage.selectFC();
-    });
-
-    test('Select Brand', async () => {
-        await obcPage.clickBrandDropdown();
-        await obcPage.typeBrand();
-        await obcPage.selectBrand();
-    });
-
-    test('Upload zero-amount Collection Report', async () => {
-        await obcPage.uploadCollectionReport(FILE);
-    });
-
-    test('Click Submit', async () => { await obcPage.clickSubmit(); });
 
     test('Wait for Fully Processed and Open View', async () => {
         test.setTimeout(150000);
         await obcPage.waitForProcessingAndClickStatus();
+        await page.waitForTimeout(50000);
     });
 
     test('Verify View: all counts = 0 (all skipped)', async () => {
@@ -673,10 +716,12 @@ test.describe.skip(`OBC Elimination [${CFG.brand}] — Zero Amount Skipped`, () 
         expect(results.uniqueEntries, 'Unique must be 0').toBe(0);
         expect(results.previouslyCaptured, 'Previously Captured must be 0').toBe(0);
         expect(results.errors, 'Error must be 0').toBe(0);
+        await page.waitForTimeout(50000);
     });
 
     test('DB Post-check: no obc_adjustment_data for zero-amount', async () => {
         const entry = await getObcAdjustmentEntry(CFG.brandId, CFG.fcId, runtime.invoiceNo, '0.00');
         expect(entry, 'Zero-amount must NOT create entry').toBeNull();
+        await page.waitForTimeout(50000);
     });
 });

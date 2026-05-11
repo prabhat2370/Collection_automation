@@ -1,17 +1,15 @@
-import { DeliveryAllocationPage } from '../pages/deliveryAllocationPage';
-import { LoginPage } from '../pages/LoginPage';
 import { test } from '@playwright/test';
-import { USERS } from '../config/testData.js';
+import { DeliveryAllocationPage } from '../pages/deliveryAllocationPage';
+import { loginAs } from '../utils/auth.js';
 
 test.describe.configure({ mode: 'serial' });
 
 test.describe('Delivery Allocation Flow', () => {
 
-  let page, loginPage, deliveryAllocationPage;
+  let page, deliveryAllocationPage;
 
   test.beforeAll(async ({ browser }) => {
     page = await browser.newPage();
-    loginPage = new LoginPage(page);
     deliveryAllocationPage = new DeliveryAllocationPage(page);
   });
 
@@ -19,56 +17,45 @@ test.describe('Delivery Allocation Flow', () => {
     await page.close();
   });
 
-  test('Open Login Page', async () => {
-    await loginPage.navigate();
+  test.afterEach(async ({}, testInfo) => {
+    if (process.env.CAPTURE_SCREENSHOTS === 'N') return;
+    if (page && !page.isClosed()) {
+      try {
+        await page.waitForTimeout(1500);
+        const buf = await page.screenshot({ fullPage: true });
+        await testInfo.attach('screenshot', { body: buf, contentType: 'image/png' });
+      } catch (err) {
+        console.log('[afterEach] screenshot failed:', err.message);
+      }
+    }
   });
 
-  test('Fill Email', async () => {
-    await loginPage.emailInput.fill(USERS.obc.email);
-  });
+  test('Allocate invoices to vehicle', async () => {
+    await test.step('Login as OBC admin', async () => {
+      await loginAs(page, 'obc');
+    });
 
-  test('Fill Password', async () => {
-    await loginPage.passwordInput.fill(USERS.obc.password);
-  });
+    await test.step('Open Delivery Allocation form', async () => {
+      await deliveryAllocationPage.clickLogisticsManagement();
+      await deliveryAllocationPage.clickDeliveryAllocation();
+      await deliveryAllocationPage.clickCreateDeliveryAllocation();
+    });
 
-  test('Click Login Button', async () => {
-    await loginPage.loginBtn.click();
-  });
+    await test.step('Select invoices and click Allocate Vehicle', async () => {
+      await deliveryAllocationPage.selectAndAllocateInvoices();
+      await page.waitForTimeout(1000);
+    });
 
-  test('Click Logistics Management', async () => {
-    await deliveryAllocationPage.clickLogisticsManagement();
-  });
+    await test.step('Fill allocation modal', async () => {
+      await deliveryAllocationPage.handleAllocationModal();
+    });
 
-  test('Click Delivery Allocation', async () => {
-    await deliveryAllocationPage.clickDeliveryAllocation();
-  });
-
-  test('Click Create Delivery Allocation', async () => {
-    await deliveryAllocationPage.clickCreateDeliveryAllocation();
-    
-  });
-
-  test('Select and Allocate Invoices', async () => {
-    await deliveryAllocationPage.selectAndAllocateInvoices();
-    await page.waitForTimeout(1000);
-  });
-
-  test('Handle Allocation Modal', async () => {
-    await deliveryAllocationPage.handleAllocationModal();
-  });
-
-  test('Submit Delivery Allocation', async () => {
-    await deliveryAllocationPage.clickSubmit();
-  });
-
-  test('Click Primary Button', async () => {
-    await deliveryAllocationPage.clickPrimaryButton();
-    
-  });
-
-  test('Click Confirm', async () => {
-    await deliveryAllocationPage.clickConfirm();
-    await page.waitForTimeout(5000);
+    await test.step('Submit and confirm', async () => {
+      await deliveryAllocationPage.clickSubmit();
+      await deliveryAllocationPage.clickPrimaryButton();
+      await deliveryAllocationPage.clickConfirm();
+      await page.waitForTimeout(5000);
+    });
   });
 
 });

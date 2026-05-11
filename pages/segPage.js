@@ -1,4 +1,4 @@
-import { SEG } from '../config/testData.js';
+import { SEG } from '../test-data/seg.js';
 import { firstOBCData } from '../utils/excelReader.js';
 
 export class SegPage {
@@ -23,7 +23,7 @@ export class SegPage {
 
     async clickAllocationLink() { await this.allocationLink.click(); }
     async clickFCDropdown() { await this.fcDropdown.click(); }
-    async selectBTM() { await this.selectedFC.click(); }
+    async selectCMBT() { await this.selectedFC.click(); }
     async clickBrandDropdown() { await this.brandDropdown.click(); }
     async selectBritannia() { await this.selectedBrand.click(); }
     async clickContinue() { await this.continueBtn.click(); }

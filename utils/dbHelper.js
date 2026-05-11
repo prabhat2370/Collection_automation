@@ -167,6 +167,30 @@ export async function getChampOutstandingInvoice(invoiceNo, fcId, brandId) {
 }
 
 /**
+ * Ensures retailer_master_enabled = 1 in ChampFcBrands for the given fc+brand.
+ * Reads current value; updates to 1 only if currently 0.
+ * Returns { previousValue, updated } so callers can log/assert.
+ */
+export async function ensureRetailerMasterEnabled(fcId, brandId) {
+    const rows = await runQuery(
+        `SELECT retailer_master_enabled FROM ChampFcBrands WHERE fc_id = ? AND brand_id = ? LIMIT 1`,
+        [fcId, brandId]
+    );
+    if (!rows.length) {
+        throw new Error(`No ChampFcBrands row found for fc_id=${fcId}, brand_id=${brandId}`);
+    }
+    const previousValue = rows[0].retailer_master_enabled;
+    if (previousValue === 1) {
+        return { previousValue, updated: false };
+    }
+    await runQuery(
+        `UPDATE ChampFcBrands SET retailer_master_enabled = 1 WHERE fc_id = ? AND brand_id = ?`,
+        [fcId, brandId]
+    );
+    return { previousValue, updated: true };
+}
+
+/**
  * Deletes obc_adjustment_data entries for the given invoice+amount combination.
  * Used as cleanup before re-running the happy-path test.
  */

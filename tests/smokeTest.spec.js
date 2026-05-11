@@ -8,10 +8,16 @@ import { ReturnToFCPage } from '../pages/returnToFCPage';
 import { SegPage } from '../pages/segPage';
 import { SegVerificationPage } from '../pages/segVerificationPage';
 import { CashVerificationPage } from '../pages/cashVerificationPage';
-import {
-  USERS, FILE_PATHS, DELIVERY, RFC_COLLECTION,
-  RFC_UPLOAD_FILES, AMOUNTS, PAYMENT_MODES,
-} from '../config/testData.js';
+import { USERS } from '../test-data/users.js';
+import { OBC_UPLOAD_FILE } from '../test-data/obcUpload.js';
+import { SALES_ORDER_FILES } from '../test-data/salesOrder.js';
+import { DELIVERY } from '../test-data/deliveryAllocation.js';
+import { RFC_COLLECTION, RFC_UPLOAD_FILES } from '../test-data/rfc.js';
+import { AMOUNTS } from '../test-data/collection.js';
+import { PAYMENT_MODES } from '../test-data/cashier.js';
+
+// Backwards-compat shim — smokeTest references FILE_PATHS.obcFile / .soReport / etc.
+const FILE_PATHS = { obcFile: OBC_UPLOAD_FILE, ...SALES_ORDER_FILES };
 
 test.describe.configure({ mode: 'serial' });
 
@@ -38,6 +44,19 @@ test.describe('Smoke Test', () => {
     await page.close();
   });
 
+  test.afterEach(async ({}, testInfo) => {
+    if (process.env.CAPTURE_SCREENSHOTS === 'N') return;
+    if (page && !page.isClosed()) {
+      try {
+        await page.waitForTimeout(1500);
+        const buf = await page.screenshot({ fullPage: true });
+        await testInfo.attach('screenshot', { body: buf, contentType: 'image/png' });
+      } catch (err) {
+        console.log('[afterEach] screenshot failed:', err.message);
+      }
+    }
+  });
+
   // 1. Login
   test('Login', async () => {
     await loginPage.navigate();
@@ -54,8 +73,8 @@ test.describe('Smoke Test', () => {
   //   await soUploadPage.clickUploadTypeDropdown();
   //   await soUploadPage.selectSalesOrder();
   //   await soUploadPage.clickFCDropdown();
-  //   await soUploadPage.typeBTM();
-  //   await soUploadPage.selectBTM();
+  //   await soUploadPage.typeCMBT();
+  //   await soUploadPage.selectCMBT();
   //   await soUploadPage.clickBrandDropdown();
   //   await soUploadPage.typeBRIT();
   //   await soUploadPage.selectBritannia();
@@ -88,7 +107,7 @@ test.describe('Smoke Test', () => {
     test.setTimeout(600000);
     await returnToFCPage.clickLogisticsManagement();
     await returnToFCPage.clickReturnToFC();
-    await returnToFCPage.clickEyeIcon(DELIVERY.driverName);
+    await returnToFCPage.clickEyeIcon(DELIVERY.vehicleNo);
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
     await page.waitForTimeout(2000);
     await returnToFCPage.processAllInvoicesFlow(DELIVERY.deliveryStatus, RFC_COLLECTION);
@@ -107,8 +126,8 @@ test.describe('Smoke Test', () => {
     await obcupload.clickUploadTypeDropdown();
     await obcupload.clickOBCOption();
     await obcupload.clickFCDropdown();
-    await obcupload.typeBTM();
-    await obcupload.selectBTM();
+    await obcupload.typeCMBT();
+    await obcupload.selectCMBT();
     await obcupload.clickBrandDropdown();
     await obcupload.typeBRIT();
     await obcupload.selectBritannia();
@@ -136,7 +155,7 @@ test.describe('Smoke Test', () => {
     await loginPage.loginBtn.click();
     await segPage.clickAllocationLink();
     await segPage.clickFCDropdown();
-    await segPage.selectBTM();
+    await segPage.selectCMBT();
     await segPage.clickBrandDropdown();
     await segPage.selectBritannia();
     await segPage.clickContinue();
