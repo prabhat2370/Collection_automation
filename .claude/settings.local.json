@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__claude_ai_Atlassian__getJiraIssue",
+      "PowerShell($adb = \"C:\\\\Users\\\\User\\\\AppData\\\\Local\\\\Android\\\\Sdk\\\\platform-tools\\\\adb.exe\"; & $adb shell uiautomator dump /sdcard/cur.xml; & $adb pull /sdcard/cur.xml \"C:\\\\Users\\\\User\\\\Desktop\\\\Collection_Auto\\\\mobile\\\\current_screen.xml\")",
+      "PowerShell($env:ANDROID_HOME = \"C:\\\\Users\\\\User\\\\AppData\\\\Local\\\\Android\\\\Sdk\"; $env:ANDROID_SDK_ROOT = $env:ANDROID_HOME; $env:Path = \"$env:ANDROID_HOME\\\\platform-tools;$env:ANDROID_HOME\\\\emulator;$env:Path\"; npm run collection:mobile 2>&1 | Select-Object -Last 80)",
+      "PowerShell($env:ANDROID_HOME = \"C:\\\\Users\\\\User\\\\AppData\\\\Local\\\\Android\\\\Sdk\"; $env:ANDROID_SDK_ROOT = $env:ANDROID_HOME; $env:Path = \"$env:ANDROID_HOME\\\\platform-tools;$env:ANDROID_HOME\\\\emulator;$env:Path\"; npm run collection:mobile 2>&1 | Select-Object -Last 30)",
+      "PowerShell($adb = \"C:\\\\Users\\\\User\\\\AppData\\\\Local\\\\Android\\\\Sdk\\\\platform-tools\\\\adb.exe\"; & $adb shell am force-stop com.ripplr.dms; & $adb shell pm clear com.ripplr.dms; & $adb shell monkey -p com.ripplr.dms -c android.intent.category.LAUNCHER 1 2>&1 | Select-Object -Last 3)"
+    ]
+  }
+}

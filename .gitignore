@@ -4,7 +4,7 @@
 
 # Playwright
 node_modules/
-/test-results/
+test-results/
 /playwright-report/
 /blob-report/
 /playwright/.cache/
@@ -13,3 +13,18 @@ node_modules/
 # Allure
 /allure-results/
 /allure-report/
+allure-report.zip
+
+# Appium / mobile
+/mobile/apk/*.apk
+.appium/
+appium.log
+
+# Test runtime state (produced and consumed by tests)
+/test-data/runtime/*.json
+/test-cases/.catbox-cache.json
+/test-cases/.run-tcs.json
+
+# IDE
+.idea/
+*.iml
