@@ -110,6 +110,56 @@ export function prepareSOUploadFiles(soReportPath, invoiceReportPath, salesRegis
 }
 
 /**
+ * Generates an invoice number in the form: SUNInv{ddd}{AAA}
+ * — fixed prefix "SUNInv" + 3 random digits + 3 random uppercase letters (e.g. "SUNInv478QKM").
+ */
+function generateRandomSunpureInvoiceNo() {
+    const digits = Array.from({ length: 3 }, () => Math.floor(Math.random() * 10)).join('');
+    const alpha = Array.from({ length: 3 }, () =>
+        String.fromCharCode(65 + Math.floor(Math.random() * 26))
+    ).join('');
+    return `SUNInv${digits}${alpha}`;
+}
+
+/**
+ * Prepares the single Sunpure SO upload CSV with fresh unique Sales Invoice numbers.
+ *
+ * Reads the CSV in place, rewrites only the "Sales Invoice No" column (case-insensitive header
+ * match), and writes back to the same path preserving EOL style. Every other column is kept
+ * byte-for-byte intact. Each data row gets its own unique invoice number.
+ *
+ * @param {string} filePath - Absolute path to Sunpure SO CSV (read + written in place)
+ * @returns {string[]} unique invoice numbers generated, in row order
+ */
+export function prepareSunpureSOUploadFile(filePath) {
+    const text = readFileSync(filePath, 'utf8');
+    const eol = text.includes('\r\n') ? '\r\n' : '\n';
+    const lines = text.split(/\r?\n/);
+    if (lines.length < 2) throw new Error(`No data rows in: ${filePath}`);
+
+    const headers = splitCsvLine(lines[0]).map(h => h.replace(/^"|"$/g, '').trim().toLowerCase());
+    const colIdx = headers.findIndex(h => h === 'sales invoice no');
+    if (colIdx < 0) throw new Error(`"Sales Invoice No" column not found in: ${filePath}`);
+
+    const assigned = [];
+    const seen = new Set();
+    const newLines = lines.map((line, i) => {
+        if (i === 0) return line;
+        if (line.trim() === '') return line;
+        let inv;
+        do { inv = generateRandomSunpureInvoiceNo(); } while (seen.has(inv));
+        seen.add(inv);
+        const fields = splitCsvLine(line);
+        fields[colIdx] = inv;
+        assigned.push(inv);
+        return fields.join(',');
+    });
+    writeFileSync(filePath, newLines.join(eol));
+    console.log(`[SOPrep][Sunpure] (${assigned.length} rows) → ${filePath}: [${assigned.join(', ')}]`);
+    return assigned;
+}
+
+/**
  * Formats a Date object to DD/MM/YYYY — matching the Nestlé collection report format.
  */
 export function formatDateDMY(date = new Date()) {

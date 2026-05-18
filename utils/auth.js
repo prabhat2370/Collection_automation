@@ -1,5 +1,5 @@
-import { LoginPage } from '../pages/LoginPage.js';
-import { CollectionPage } from '../pages/collectionPage.js';
+import { LoginPage } from '../web/pages/LoginPage.js';
+import { CollectionPage } from '../web/pages/collectionPage.js';
 import { USERS } from '../test-data/users.js';
 
 export async function loginAs(page, role) {
