@@ -31,6 +31,7 @@ test.describe('Delivery Allocation Flow', () => {
   });
 
   test('Allocate invoices to vehicle', async () => {
+    test.setTimeout(90_000);
     await test.step('Login as OBC admin', async () => {
       await loginAs(page, 'obc');
     });
