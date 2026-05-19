@@ -92,10 +92,14 @@ export class DeliveryAllocationPage {
     }
 
     async clickPrimaryButton() {
-        await this.page.locator("//button[@type='primary']").click();
+        await this.page.locator('#loader.show').waitFor({ state: 'hidden', timeout: 15000 }).catch(() => {});
+        const dialogConfirm = this.page.locator('.ant-modal').getByRole('button', { name: 'Confirm' });
+        await dialogConfirm.waitFor({ state: 'visible', timeout: 10000 });
+        await dialogConfirm.click();
     }
 
     async clickConfirm() {
-        await this.page.getByText('Confirm').click();
+        await this.page.locator('#loader.show').waitFor({ state: 'hidden', timeout: 15000 }).catch(() => {});
+        await this.page.getByRole('button', { name: 'Confirm' }).last().click();
     }
 }
