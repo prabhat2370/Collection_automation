@@ -1,0 +1,48 @@
+
+> collection_auto@1.0.0 rfc
+> npx playwright test --config web/playwright.config.js web/tests/returnToFC.spec.js --headed
+
+◇ injected env (9) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+
+Running 1 test using 1 worker
+
+[1A[2K◇ injected env (0) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+
+[1A[2K[1/1] [chromium] › web\tests\returnToFC.spec.js:35:3 › Return to FC Flow › Process Return-to-FC for latest vehicle
+[1A[2K[chromium] › web\tests\returnToFC.spec.js:35:3 › Return to FC Flow › Process Return-to-FC for latest vehicle
+
+--- Processing invoice: SUNInv145FVF | status: Delivered ---
+
+[1A[2K  1) [chromium] › web\tests\returnToFC.spec.js:35:3 › Return to FC Flow › Process Return-to-FC for latest vehicle › Process all invoices through delivery + collection form 
+
+    Error: locator.click: Target page, context or browser has been closed
+    Call log:
+    [2m  - waiting for locator('//div[contains(@class,\'ant-select-item-option\') and @title=\'Delivered\']')[22m
+
+
+       at ..\pages\returnToFCPage.js:78
+
+      76 |             await dropdown.click();
+      77 |             await this.page.waitForTimeout(500);
+    > 78 |             await this.statusOption(statusText).click();
+         |                                                 ^
+      79 |             await this.page.waitForTimeout(1500);
+      80 |
+      81 |             // Click OK if present (toast/modal)
+        at ReturnToFCPage.processAllInvoicesFlow (c:\Users\User\Desktop\Collection_Auto\web\pages\returnToFCPage.js:78:49)
+        at c:\Users\User\Desktop\Collection_Auto\web\tests\returnToFC.spec.js:50:7
+        at c:\Users\User\Desktop\Collection_Auto\web\tests\returnToFC.spec.js:49:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\returnToFC-Return-to-FC-Fl-7e164-rn-to-FC-for-latest-vehicle-chromium\test-finished-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\returnToFC-Return-to-FC-Fl-7e164-rn-to-FC-for-latest-vehicle-chromium\error-context.md
+
+    Error Context: test-results\returnToFC-Return-to-FC-Fl-7e164-rn-to-FC-for-latest-vehicle-chromium\error-context.md
+
+
+[1A[2K  Slow test file: [chromium] › web\tests\returnToFC.spec.js (5.2m)
+  Consider running tests from slow files in parallel. See: https://playwright.dev/docs/test-parallel
+  1 failed
+    [chromium] › web\tests\returnToFC.spec.js:35:3 › Return to FC Flow › Process Return-to-FC for latest vehicle 

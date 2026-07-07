@@ -4,18 +4,18 @@ import { SEG } from './seg.js';
 
 // Used during RFC verification flow (SEG.verificationType === 'D')
 export const RFC_PAYMENT_MODES = {
-    cash: 'NA',
-    cheque: 'NA',
-    upi: 'NA',
-    neft: 'NA',
+    cash: '',
+    cheque: '',
+    upi: '',
+    neft: 'V',
 };
 
 // Used during Collection verification flow (SEG.verificationType === 'S')
 export const COLLECTION_PAYMENT_MODES = {
-    cash: 'NA',
-    cheque: 'NA',
-    upi: 'NA',
-    neft: 'NA',
+    cash: 'V',
+    cheque: 'V',
+    upi: 'V',
+    neft: 'V',
 };
 
 // Active modes — picked at runtime based on SEG.verificationType

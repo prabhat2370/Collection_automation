@@ -1,0 +1,34 @@
+
+> collection_auto@1.0.0 segCA
+> npx playwright test --config web/playwright.config.js web/tests/segCA.spec.js --headed
+
+
+Running 1 test using 1 worker
+
+[1A[2K[1/1] [chromium] › web\tests\segCA.spec.js:50:3 › Seg Credit Adjustment Flow › Seg Credit Adjustment for Sunpure invoices
+[1A[2K[chromium] › web\tests\segCA.spec.js:50:3 › Seg Credit Adjustment Flow › Seg Credit Adjustment for Sunpure invoices
+Selected: SUNInv728GQI
+
+[1A[2KSkipped:  (none)
+
+[1A[2K"Remove and Continue with Other Invoices" not shown — skipping.
+
+[1A[2KPending Financial Adjustment modal detected — running Credit Adjustment upload for BGRD: Begur Road + SNPR: Sunpure
+
+[1A[2KCredit Adjustment upload submitted for SNPR: Sunpure
+
+[1A[2KSelected: SUNInv728GQI
+
+[1A[2KSkipped:  (none)
+
+[1A[2K"Remove and Continue with Other Invoices" not shown — skipping.
+
+[1A[2K"Some invoices cannot be assigned" modal not shown — skipping.
+
+[1A[2KClose button clicked.
+
+[1A[2KExpected (soInvoices.json): 1
+
+[1A[2KActual (Sunpure rows on Handover page): 1
+
+[1A[2K  1 passed (4.3m)

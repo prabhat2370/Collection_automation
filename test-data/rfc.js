@@ -1,8 +1,8 @@
 export const RFC_COLLECTION = {
-    cash: '',
-    cheque: '',
-    upi: '',
-    neft: '',
+    cash: '11',
+    cheque: '42',
+    upi: '53',
+    neft: '74',
 };
 
 export const RFC_UPLOAD_FILES = [

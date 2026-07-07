@@ -82,6 +82,7 @@ export const LOCATORS = {
         shopClosedOption: '//*[contains(@content-desc, "Shop Permanently Closed")]',
         finalSubmitBtn: '~Proceed to Adjustment',
         submitCollectionDiv: '//*[contains(@content-desc, "Submit Collection")]',
+        skipWithoutReturnsBtn: '//*[@content-desc="Skip without returns"]',
         confirmationBtn: (answer) => `//*[contains(@content-desc, "${answer}")]`,
     },
 };

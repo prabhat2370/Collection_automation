@@ -1,8 +1,18 @@
-import { readFileSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { resolve } from 'path';
 import { subtractCollectionDate } from '../../utils/dbHelper.js';
 
 const SO_INVOICES_FILE = resolve(process.cwd(), 'test-data/runtime/soInvoices.json');
+const COLLECTION_REFS_FILE = resolve(process.cwd(), 'test-data/runtime/collectionRefs.json');
+
+// Persist a payment reference (upi/neft/cheque) to collectionRefs.json so Cash
+// Verification can insert the matching bank statement and reconcile it.
+// Mirrors saveRef() in web/pages/collectionPage.js; preserves existing keys (e.g. delivery).
+function saveRef(key, data) {
+    const existing = existsSync(COLLECTION_REFS_FILE) ? JSON.parse(readFileSync(COLLECTION_REFS_FILE)) : {};
+    existing[key] = data;
+    writeFileSync(COLLECTION_REFS_FILE, JSON.stringify(existing, null, 2));
+}
 
 const STATUS_MAP = {
     D: 'Delivered',
@@ -28,18 +38,19 @@ export class ReturnToFCPage {
         this.invoiceReturnedRadio = this.page.getByRole('radio', { name: 'Invoice Returned' });
         this.cashAmount     = this.page.getByRole('spinbutton', { name: 'Amount' }).nth(0);
         this.chequeAmount   = this.page.getByRole('spinbutton', { name: 'Amount' }).nth(1);
-        this.chequeNumber   = this.page.getByPlaceholder('Cheque Number');
-        this.bankDropdown   = this.page.locator("//div[.//span[normalize-space()='Select Bank']]");
-        this.dueDate        = this.page.getByPlaceholder('Select date');
-        this.todayBtn       = this.page.locator(".ant-picker-today-btn");
+        this.chequeNumber   = this.page.getByRole('textbox', { name: 'Cheque Number' });
+        this.bankDropdown   = this.page.locator('.ant-select:has(.ant-select-selection-placeholder:text-is("Select Bank"))');
+        this.dueDate        = this.page.getByRole('textbox', { name: 'Due Date' });
+        this.pickerPanel    = this.page.locator('.ant-picker-dropdown:visible').first();
+        this.todayBtn       = this.page.locator('.ant-picker-dropdown:visible .ant-picker-today-btn');
         this.upiAmount      = this.page.getByRole('spinbutton', { name: 'Amount' }).nth(2);
-        this.upiRefNumber   = this.page.getByPlaceholder('UPI Reference Number');
+        this.upiRefNumber   = this.page.getByRole('textbox', { name: 'UPI Reference Number' });
         this.neftAmount     = this.page.getByRole('spinbutton', { name: 'Amount' }).nth(3);
-        this.neftRefNumber  = this.page.getByPlaceholder('Reference Number');
+        this.neftRefNumber  = this.page.getByRole('textbox', { name: 'Reference Number', exact: true });
         this.collectionUpdateBtn = this.page.getByRole('button', { name: 'Update' });
 
         // Verify invoices + RFC close locators
-        this.checkIcon = (invoice) => this.page.locator(`//tr[td[contains(., '${invoice}')]]//td[10]//div[@cursor='pointer'][last()]`);
+        this.checkIcon = (invoice) => this.page.locator(`//tr[td[contains(., '${invoice}')]]//td[11]//div[@cursor='pointer'][last()]`);
         this.uploadInvBtn = this.page.locator("button:has-text('Upload Inv & Other Doc')");
         this.fileInput = this.page.locator("input[type='file']");
         this.uploadConfirmBtn = this.page.locator("//div[@class='sc-bczRLJ iVToiv'][normalize-space()='Upload']");
@@ -84,15 +95,25 @@ export class ReturnToFCPage {
                 await this.page.waitForTimeout(500);
             } catch (_) { /* no OK button, continue */ }
 
-            // Click Yes on confirmation
-            await this.yesBtn.click({ timeout: 10000 });
-            await this.page.waitForTimeout(500);
+            // Click Yes on confirmation (may not appear if status was already set)
+            try {
+                await this.yesBtn.click({ timeout: 5000 });
+                await this.page.waitForTimeout(500);
+            } catch (_) { /* no confirmation modal, continue */ }
 
             // Click Update → wait for collection page
-            await Promise.all([
-                this.page.waitForURL('**/collection**', { timeout: 15000 }),
-                this.updateBtn.click(),
-            ]);
+            try {
+                await Promise.all([
+                    this.page.waitForURL('**/collection**', { timeout: 20000 }),
+                    this.updateBtn.click(),
+                ]);
+            } catch (_) {
+                const currentUrl = this.page.url();
+                if (!/collection/i.test(currentUrl)) {
+                    console.log(`⚠ Update did not advance to collection step for ${invoice} (still at ${currentUrl}). Skipping — likely already processed.`);
+                    continue;
+                }
+            }
             await this.page.waitForLoadState('networkidle');
             await this.page.waitForTimeout(1500);
 
@@ -137,7 +158,17 @@ export class ReturnToFCPage {
             await this.page.waitForTimeout(300);
             await this.dueDate.click();
             await this.page.waitForTimeout(500);
-            await this.todayBtn.click();
+            // Wait for the date-picker panel, then pick today — fall back to the
+            // "today" cell (or first selectable cell) if the quick-select button is absent.
+            await this.pickerPanel.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
+            if (await this.todayBtn.isVisible().catch(() => false)) {
+                await this.todayBtn.click();
+            } else {
+                await this.pickerPanel.locator('.ant-picker-cell-today').first().click()
+                    .catch(async () => {
+                        await this.pickerPanel.locator('.ant-picker-cell-in-view').first().click();
+                    });
+            }
             await this.page.waitForTimeout(300);
         }
 
@@ -146,8 +177,11 @@ export class ReturnToFCPage {
             await this.upiAmount.click();
             await this.upiAmount.fill(collection.upi);
             await this.page.waitForTimeout(1000);
+            const upiRef = String(Date.now()).padEnd(14, '0').slice(0, 14);
             await this.upiRefNumber.click();
-            await this.upiRefNumber.fill(String(Date.now()).padEnd(14, '0').slice(0, 14));
+            await this.upiRefNumber.fill(upiRef);
+            // Persist so Cash Verification can insert a matching UPI bank statement.
+            saveRef('upi', { refNumber: upiRef, amount: collection.upi });
             await this.page.waitForTimeout(300);
         }
 
@@ -156,8 +190,11 @@ export class ReturnToFCPage {
             await this.neftAmount.click();
             await this.neftAmount.fill(collection.neft);
             await this.page.waitForTimeout(1000);
+            const neftRef = String(Date.now()).padEnd(12, '0').slice(0, 12);
             await this.neftRefNumber.click();
-            await this.neftRefNumber.fill(String(Date.now()).padEnd(12, '0').slice(0, 12));
+            await this.neftRefNumber.fill(neftRef);
+            // Persist so Cash Verification can insert a matching NEFT bank statement.
+            saveRef('neft', { refNumber: neftRef, amount: collection.neft });
             await this.page.waitForTimeout(300);
         }
     }

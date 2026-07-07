@@ -1,0 +1,315 @@
+- generic [ref=e47]:
+  - navigation [ref=e48]:
+    - img "home" [ref=e50]
+    - generic [ref=e51]:
+      - menu [ref=e54]:
+        - menuitem "Dashboard" [ref=e55] [cursor=pointer]:
+          - img [ref=e57]
+          - link "Dashboard" [ref=e60]:
+            - /url: /dashboard
+        - menuitem "Finance Management" [ref=e61] [cursor=pointer]:
+          - img [ref=e63]
+          - generic [ref=e66]: Finance Management
+        - menuitem "Collections Overview" [ref=e67] [cursor=pointer]:
+          - img [ref=e69]
+          - generic [ref=e75]: Collections Overview
+        - menuitem "desktop Collection Settlement" [ref=e76] [cursor=pointer]:
+          - img "desktop" [ref=e78]:
+            - img [ref=e79]
+          - link "Collection Settlement" [ref=e82]:
+            - /url: /cashier
+        - menuitem "file Bank Settlement" [ref=e83] [cursor=pointer]:
+          - img "file" [ref=e85]:
+            - img [ref=e86]
+          - link "Bank Settlement" [ref=e89]:
+            - /url: /bank-settlement/history
+        - menuitem "Cheque Bounce" [ref=e90] [cursor=pointer]:
+          - img [ref=e92]
+          - link "Cheque Bounce" [ref=e97]:
+            - /url: /cheque-bounce
+        - menuitem "Downloads" [ref=e98] [cursor=pointer]:
+          - img [ref=e100]
+          - link "Downloads" [ref=e103]:
+            - /url: /downloads
+      - button "left Collapse" [ref=e105] [cursor=pointer]:
+        - img "left" [ref=e106]:
+          - img [ref=e107]
+        - generic [ref=e109]: Collapse
+  - generic [ref=e110]:
+    - generic [ref=e111]:
+      - generic [ref=e112]:
+        - link "home" [ref=e113] [cursor=pointer]:
+          - /url: /dashboard
+          - img "home" [ref=e114]
+        - generic [ref=e115]: ">"
+        - link "Cashier Dashboard" [ref=e184] [cursor=pointer]:
+          - /url: /cashier
+      - generic [ref=e117]:
+        - generic [ref=e118]:
+          - generic "New Theme" [ref=e119] [cursor=pointer]
+          - generic "Orange Theme" [ref=e120] [cursor=pointer]
+        - generic [ref=e121] [cursor=pointer]:
+          - generic [ref=e122]:
+            - generic [ref=e123]: cash2 segcash2
+            - generic [ref=e124]: cashobc2@ripplr.in
+          - generic [ref=e125]: cs
+    - generic [ref=e185]:
+      - generic [ref=e186]:
+        - generic [ref=e187]:
+          - generic [ref=e188]:
+            - generic [ref=e189]: Search
+            - generic [ref=e190]:
+              - img [ref=e192]
+              - textbox "Search by Name / Phone Number" [ref=e196]
+          - generic [ref=e198]:
+            - generic [ref=e199]:
+              - generic [ref=e200] [cursor=pointer]: Salesperson
+              - generic [ref=e201] [cursor=pointer]: Deliverer
+            - generic [ref=e204]:
+              - textbox "06-Jun-2026" [ref=e205]:
+                - /placeholder: Select date
+              - generic:
+                - img "dateIcon"
+        - generic [ref=e207]:
+          - generic [ref=e208]:
+            - img "totalBillBack" [ref=e209]
+            - generic [ref=e210]:
+              - generic [ref=e211]: Ready For Verification
+              - generic [ref=e212]: "1"
+          - generic [ref=e214]:
+            - img "cash" [ref=e215]
+            - generic [ref=e216]:
+              - generic [ref=e217]: Total Cash
+              - generic [ref=e218]:
+                - text: ₹1
+                - generic [ref=e315]: (1)
+          - generic [ref=e220]:
+            - img "cheque" [ref=e221]
+            - generic [ref=e222]:
+              - generic [ref=e223]: Total Cheque
+              - generic [ref=e224]: ₹0
+          - generic [ref=e226]:
+            - img "utr" [ref=e227]
+            - generic [ref=e228]:
+              - generic [ref=e229]: Total UPI
+              - generic [ref=e230]:
+                - text: ₹100
+                - generic [ref=e316]: (1)
+          - generic [ref=e232]:
+            - img "online" [ref=e233]
+            - generic [ref=e234]:
+              - generic [ref=e235]: Total NEFT
+              - generic [ref=e236]: ₹0
+          - img "pending" [ref=e238] [cursor=pointer]
+      - generic [ref=e241]:
+        - table [ref=e245]:
+          - rowgroup [ref=e258]:
+            - row "Vehicle Number Driver Name Name Brand filter Phone Total Invoice Collected Amount Cash Cheque UPI NEFT Verification filter Error Remarks" [ref=e319]:
+              - columnheader "Vehicle Number" [ref=e320]
+              - columnheader "Driver Name" [ref=e321]
+              - columnheader "Name" [ref=e260]
+              - columnheader "Brand filter" [ref=e261]:
+                - generic [ref=e262]:
+                  - generic [ref=e263]: Brand
+                  - button "filter" [ref=e264] [cursor=pointer]:
+                    - img "filter" [ref=e265]:
+                      - img [ref=e266]
+              - columnheader "Phone" [ref=e268]
+              - columnheader "Total Invoice" [ref=e269]
+              - columnheader "Collected Amount" [ref=e270]
+              - columnheader "Cash" [ref=e271]
+              - columnheader "Cheque" [ref=e272]
+              - columnheader "UPI" [ref=e273]
+              - columnheader "NEFT" [ref=e274]
+              - columnheader "Verification filter" [ref=e275]:
+                - generic [ref=e276]:
+                  - generic [ref=e277]: Verification
+                  - button "filter" [ref=e278] [cursor=pointer]:
+                    - img "filter" [ref=e279]:
+                      - img [ref=e280]
+              - columnheader "Error" [ref=e282]
+              - columnheader "Remarks" [ref=e283]
+          - rowgroup [ref=e284]:
+            - row "PN37GJ9891 Lakshman Pad Delivery Boy Sunpure 9898989816 5 ₹0 ₹0 ₹0 ₹0 ₹0 Pending addRemarks" [ref=e322]:
+              - cell "PN37GJ9891" [ref=e323]
+              - cell "Lakshman Pad" [ref=e324]
+              - cell "Delivery Boy" [ref=e325]
+              - cell "Sunpure" [ref=e326]
+              - cell "9898989816" [ref=e327]
+              - cell "5" [ref=e328]
+              - cell "₹0" [ref=e329]
+              - cell "₹0" [ref=e330]
+              - cell "₹0" [ref=e331]
+              - cell "₹0" [ref=e332]
+              - cell "₹0" [ref=e333]
+              - cell "Pending" [ref=e334]:
+                - generic [ref=e336] [cursor=pointer]: Pending
+              - cell [ref=e337]
+              - cell "addRemarks" [ref=e338]:
+                - img "addRemarks" [ref=e340] [cursor=pointer]
+            - row "KS23ED3943 Nikesh Delivery Boy Sunpure 9898989816 1 ₹0 ₹0 ₹0 ₹0 ₹0 Pending addRemarks" [ref=e341]:
+              - cell "KS23ED3943" [ref=e342]
+              - cell "Nikesh" [ref=e343]
+              - cell "Delivery Boy" [ref=e344]
+              - cell "Sunpure" [ref=e345]
+              - cell "9898989816" [ref=e346]
+              - cell "1" [ref=e347]
+              - cell "₹0" [ref=e348]
+              - cell "₹0" [ref=e349]
+              - cell "₹0" [ref=e350]
+              - cell "₹0" [ref=e351]
+              - cell "₹0" [ref=e352]
+              - cell "Pending" [ref=e353]:
+                - generic [ref=e355] [cursor=pointer]: Pending
+              - cell [ref=e356]
+              - cell "addRemarks" [ref=e357]:
+                - img "addRemarks" [ref=e359] [cursor=pointer]
+            - row "SC57US5111 Lakshman Pad Delivery Boy Sunpure 9898989816 5 ₹0 ₹0 ₹0 ₹0 ₹0 Ready for verification addRemarks" [ref=e360]:
+              - cell "SC57US5111" [ref=e361]
+              - cell "Lakshman Pad" [ref=e362]
+              - cell "Delivery Boy" [ref=e363]
+              - cell "Sunpure" [ref=e364]
+              - cell "9898989816" [ref=e365]
+              - cell "5" [ref=e366]
+              - cell "₹0" [ref=e367]
+              - cell "₹0" [ref=e368]
+              - cell "₹0" [ref=e369]
+              - cell "₹0" [ref=e370]
+              - cell "₹0" [ref=e371]
+              - cell "Ready for verification" [ref=e372]:
+                - generic [ref=e374] [cursor=pointer]: Ready for verification
+              - cell [ref=e375]
+              - cell "addRemarks" [ref=e376]:
+                - img "addRemarks" [ref=e378] [cursor=pointer]
+            - row "KS23ED3943 Nikesh Delivery Boy Sunpure 9898989816 1 ₹0 ₹0 ₹0 ₹0 ₹0 Pending addRemarks" [ref=e379]:
+              - cell "KS23ED3943" [ref=e380]
+              - cell "Nikesh" [ref=e381]
+              - cell "Delivery Boy" [ref=e382]
+              - cell "Sunpure" [ref=e383]
+              - cell "9898989816" [ref=e384]
+              - cell "1" [ref=e385]
+              - cell "₹0" [ref=e386]
+              - cell "₹0" [ref=e387]
+              - cell "₹0" [ref=e388]
+              - cell "₹0" [ref=e389]
+              - cell "₹0" [ref=e390]
+              - cell "Pending" [ref=e391]:
+                - generic [ref=e393] [cursor=pointer]: Pending
+              - cell [ref=e394]
+              - cell "addRemarks" [ref=e395]:
+                - img "addRemarks" [ref=e397] [cursor=pointer]
+            - row "KS23ED3943 Nikesh Delivery Boy Sunpure 9898989816 1 ₹0 ₹0 ₹0 ₹0 ₹0 Pending addRemarks" [ref=e398]:
+              - cell "KS23ED3943" [ref=e399]
+              - cell "Nikesh" [ref=e400]
+              - cell "Delivery Boy" [ref=e401]
+              - cell "Sunpure" [ref=e402]
+              - cell "9898989816" [ref=e403]
+              - cell "1" [ref=e404]
+              - cell "₹0" [ref=e405]
+              - cell "₹0" [ref=e406]
+              - cell "₹0" [ref=e407]
+              - cell "₹0" [ref=e408]
+              - cell "₹0" [ref=e409]
+              - cell "Pending" [ref=e410]:
+                - generic [ref=e412] [cursor=pointer]: Pending
+              - cell [ref=e413]
+              - cell "addRemarks" [ref=e414]:
+                - img "addRemarks" [ref=e416] [cursor=pointer]
+            - row "KS23ED3943 Nikesh Delivery Boy Sunpure 9898989816 1 ₹0 ₹0 ₹0 ₹0 ₹0 Pending addRemarks" [ref=e417]:
+              - cell "KS23ED3943" [ref=e418]
+              - cell "Nikesh" [ref=e419]
+              - cell "Delivery Boy" [ref=e420]
+              - cell "Sunpure" [ref=e421]
+              - cell "9898989816" [ref=e422]
+              - cell "1" [ref=e423]
+              - cell "₹0" [ref=e424]
+              - cell "₹0" [ref=e425]
+              - cell "₹0" [ref=e426]
+              - cell "₹0" [ref=e427]
+              - cell "₹0" [ref=e428]
+              - cell "Pending" [ref=e429]:
+                - generic [ref=e431] [cursor=pointer]: Pending
+              - cell [ref=e432]
+              - cell "addRemarks" [ref=e433]:
+                - img "addRemarks" [ref=e435] [cursor=pointer]
+            - row "DL01AB1234 Nikesh Delivery Boy Sunpure 9898989816 1 ₹0 ₹0 ₹0 ₹0 ₹0 Pending addRemarks" [ref=e436]:
+              - cell "DL01AB1234" [ref=e437]
+              - cell "Nikesh" [ref=e438]
+              - cell "Delivery Boy" [ref=e439]
+              - cell "Sunpure" [ref=e440]
+              - cell "9898989816" [ref=e441]
+              - cell "1" [ref=e442]
+              - cell "₹0" [ref=e443]
+              - cell "₹0" [ref=e444]
+              - cell "₹0" [ref=e445]
+              - cell "₹0" [ref=e446]
+              - cell "₹0" [ref=e447]
+              - cell "Pending" [ref=e448]:
+                - generic [ref=e450] [cursor=pointer]: Pending
+              - cell [ref=e451]
+              - cell "addRemarks" [ref=e452]:
+                - img "addRemarks" [ref=e454] [cursor=pointer]
+            - row "KS23ED3943 Nikesh Delivery Boy Sunpure 9898989816 1 ₹0 ₹0 ₹0 ₹0 ₹0 Pending addRemarks" [ref=e455]:
+              - cell "KS23ED3943" [ref=e456]
+              - cell "Nikesh" [ref=e457]
+              - cell "Delivery Boy" [ref=e458]
+              - cell "Sunpure" [ref=e459]
+              - cell "9898989816" [ref=e460]
+              - cell "1" [ref=e461]
+              - cell "₹0" [ref=e462]
+              - cell "₹0" [ref=e463]
+              - cell "₹0" [ref=e464]
+              - cell "₹0" [ref=e465]
+              - cell "₹0" [ref=e466]
+              - cell "Pending" [ref=e467]:
+                - generic [ref=e469] [cursor=pointer]: Pending
+              - cell [ref=e470]
+              - cell "addRemarks" [ref=e471]:
+                - img "addRemarks" [ref=e473] [cursor=pointer]
+            - row "KS23ED3943 Nikesh Delivery Boy Sunpure 9898989816 2 ₹0 ₹0 ₹0 ₹0 ₹0 Pending addRemarks" [ref=e474]:
+              - cell "KS23ED3943" [ref=e475]
+              - cell "Nikesh" [ref=e476]
+              - cell "Delivery Boy" [ref=e477]
+              - cell "Sunpure" [ref=e478]
+              - cell "9898989816" [ref=e479]
+              - cell "2" [ref=e480]
+              - cell "₹0" [ref=e481]
+              - cell "₹0" [ref=e482]
+              - cell "₹0" [ref=e483]
+              - cell "₹0" [ref=e484]
+              - cell "₹0" [ref=e485]
+              - cell "Pending" [ref=e486]:
+                - generic [ref=e488] [cursor=pointer]: Pending
+              - cell [ref=e489]
+              - cell "addRemarks" [ref=e490]:
+                - img "addRemarks" [ref=e492] [cursor=pointer]
+            - row "KS23ED3943 Nikesh Delivery Boy Sunpure 9898989816 2 ₹0 ₹0 ₹0 ₹0 ₹0 Pending addRemarks" [ref=e493]:
+              - cell "KS23ED3943" [ref=e494]
+              - cell "Nikesh" [ref=e495]
+              - cell "Delivery Boy" [ref=e496]
+              - cell "Sunpure" [ref=e497]
+              - cell "9898989816" [ref=e498]
+              - cell "2" [ref=e499]
+              - cell "₹0" [ref=e500]
+              - cell "₹0" [ref=e501]
+              - cell "₹0" [ref=e502]
+              - cell "₹0" [ref=e503]
+              - cell "₹0" [ref=e504]
+              - cell "Pending" [ref=e505]:
+                - generic [ref=e507] [cursor=pointer]: Pending
+              - cell [ref=e508]
+              - cell "addRemarks" [ref=e509]:
+                - img "addRemarks" [ref=e511] [cursor=pointer]
+        - list [ref=e512]:
+          - listitem "Previous Page" [ref=e513]:
+            - button "left" [disabled] [ref=e514]:
+              - img "left" [ref=e515]:
+                - img [ref=e516]
+          - listitem "1" [ref=e518] [cursor=pointer]:
+            - generic [ref=e519]: "1"
+          - listitem "2" [ref=e520] [cursor=pointer]:
+            - generic [ref=e521]: "2"
+          - listitem "Next Page" [ref=e522] [cursor=pointer]:
+            - button "right" [ref=e523]:
+              - img "right" [ref=e524]:
+                - img [ref=e525]

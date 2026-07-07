@@ -24,6 +24,7 @@ export class LoginAppPage extends BaseAppPage {
         await this.clickNext();
         await this.fillPin(pin);
         await this.hideKeyboard();
+        await browser.pause(1500);
         await this.clickLogin();
     }
 }

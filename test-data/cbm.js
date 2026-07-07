@@ -15,7 +15,7 @@ function readCollectionCheque() {
 const _savedCheque = readCollectionCheque();
 
 export const CHEQUE_BOUNCE = {
-    chequeBounceNo: _savedCheque.refNumber || '962282',
+    chequeBounceNo: _savedCheque.refNumber || '611454',
     amount: _savedCheque.amount || '',
     fcText: 'BTM',
     salesOfficerName: 'Prajwal Kedlaya',

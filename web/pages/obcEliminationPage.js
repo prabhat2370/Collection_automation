@@ -86,9 +86,9 @@ export class ObcEliminationPage {
         await this.page.waitForTimeout(300);
     }
     async typeFC() {
-        const input = this.page.locator('.ant-select-dropdown:visible input').last();
-        await input.waitFor({ state: 'visible', timeout: 5000 });
-        await input.fill(this.config.fcSearchText);
+        await this.page.locator('.ant-select-dropdown:visible').first().waitFor({ state: 'visible', timeout: 5000 });
+        await this.page.keyboard.type(this.config.fcSearchText);
+        await this.page.waitForTimeout(500);
     }
     async selectFC() { await this.selectedFC.click(); }
 
@@ -97,9 +97,9 @@ export class ObcEliminationPage {
         await this.page.waitForTimeout(300);
     }
     async typeBrand() {
-        const input = this.page.locator('.ant-select-dropdown:visible input').last();
-        await input.waitFor({ state: 'visible', timeout: 5000 });
-        await input.fill(this.config.brandSearchText);
+        await this.page.locator('.ant-select-dropdown:visible').first().waitFor({ state: 'visible', timeout: 5000 });
+        await this.page.keyboard.type(this.config.brandSearchText);
+        await this.page.waitForTimeout(500);
     }
     async selectBrand() { await this.selectedBrand.click(); }
 

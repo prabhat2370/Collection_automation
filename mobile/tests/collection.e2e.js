@@ -73,10 +73,37 @@ describe('Collection Flow (Appium / Android)', () => {
 
         if (AMOUNTS.cash) {
             await step('Fill cash amount (skips if already locked)', async () => {
+                // Wait for the Payment Collection screen to finish loading —
+                // "Loading data..." overlay disappears once the cash row renders.
+                await browser.waitUntil(
+                    async () => {
+                        const loading = await $('//*[contains(@content-desc, "Loading data")]');
+                        return !(await loading.isDisplayed().catch(() => false));
+                    },
+                    { timeout: 20000, interval: 500, timeoutMsg: 'Payment Collection still loading' }
+                ).catch(() => {});
+
+                // Now check the cash field. waitForDisplayed (not immediate isDisplayed)
+                // gives the EditText time to render; if it never appears in 10s, treat
+                // as truly locked (e.g. fully-committed collection).
                 const editable = await $('//android.widget.EditText');
-                const canEdit = await editable.isDisplayed().catch(() => false);
+                let canEdit = false;
+                try {
+                    await editable.waitForDisplayed({ timeout: 10000 });
+                    canEdit = await editable.isEnabled().catch(() => true);
+                } catch { /* never appeared — locked */ }
+
                 if (canEdit) {
                     await collectionPage.fillCash(AMOUNTS.cash);
+                    // Diagnostic: dump + screenshot after cash fill.
+                    const afterSrc = await browser.getPageSource();
+                    writeFileSync(resolve(process.cwd(), 'mobile', 'after_cash_dump.xml'), afterSrc, 'utf8');
+                    const screenshotB64 = await browser.takeScreenshot();
+                    writeFileSync(resolve(process.cwd(), 'mobile', 'after_cash.png'), Buffer.from(screenshotB64, 'base64'));
+                    // Also check the Total at bottom — that reflects whether cash registered.
+                    const total = await $('//*[starts-with(@content-desc, "Total:")]');
+                    const totalText = await total.getAttribute('content-desc').catch(() => '');
+                    console.log('>>> CASH_STEP after fill, Total content-desc =', JSON.stringify(totalText));
                 } else {
                     console.log('Cash input is locked (partial collection in progress) — skipping fill');
                 }
@@ -201,6 +228,74 @@ describe('Collection Flow (Appium / Android)', () => {
             await browser.pause(3000);
             const src = await browser.getPageSource();
             writeFileSync(resolve(process.cwd(), 'mobile', 'after_save_dump.xml'), src, 'utf8');
+        });
+
+        await step('Confirm Submission dialog — click Submit', async () => {
+            try {
+                console.log('>>> SUBMIT_STEP confirming submission');
+                // Save/Update on the Adjustment screen pops a "Confirm Submission"
+                // dialog directly — buttons are Cancel / Submit (not a separate
+                // Submit Collection screen with Yes/No confirmation).
+                const submitBtn = await $('//android.widget.Button[@content-desc="Submit"]');
+                await submitBtn.waitForDisplayed({ timeout: 15000 });
+                await submitBtn.click();
+                await browser.pause(4000);
+                const src = await browser.getPageSource();
+                writeFileSync(resolve(process.cwd(), 'mobile', 'after_submit_dump.xml'), src, 'utf8');
+                console.log('>>> SUBMIT_STEP DONE');
+            } catch (e) {
+                console.log('>>> SUBMIT_STEP ERROR:', e.message);
+                const src = await browser.getPageSource().catch(() => '');
+                if (src) writeFileSync(resolve(process.cwd(), 'mobile', 'submit_error_dump.xml'), src, 'utf8');
+            }
+        });
+
+        await step('Salesman: Submit Collection (batch) and confirm Yes', async () => {
+            try {
+                console.log('>>> SUBMIT_ALL_STEP waiting for post-submit spinner to clear');
+                await browser.waitUntil(
+                    async () => {
+                        const spinner = await $('//*[contains(@content-desc, "Please wait")]');
+                        return !(await spinner.isDisplayed().catch(() => false));
+                    },
+                    { timeout: 30000, interval: 1000, timeoutMsg: 'Post-submit "Please wait..." did not clear' }
+                ).catch(() => {});
+
+                console.log('>>> SUBMIT_ALL_STEP dismissing Returns screen via "Skip without returns"');
+                // "Submit Collection" (batch) is gated behind the Returns screen.
+                // The skip button is what reveals it.
+                const skipped = await collectionPage.clickSkipWithoutReturns(15000);
+                if (!skipped) {
+                    console.log('"Skip without returns" not visible — Returns screen may already be dismissed');
+                }
+
+                console.log('>>> SUBMIT_ALL_STEP locating Submit Collection');
+                const submitCollection = await $('//*[contains(@content-desc, "Submit Collection")]');
+                const visible = await submitCollection
+                    .waitForDisplayed({ timeout: 15000 })
+                    .then(() => true)
+                    .catch(() => false);
+
+                if (!visible) {
+                    console.log('Submit Collection button not visible — nothing pending to submit, skipping');
+                    return;
+                }
+
+                await collectionPage.clickSubmitCollection();
+                await browser.pause(2500);
+
+                console.log(`>>> SUBMIT_ALL_STEP clicking confirmation "${CONFIRMATION.submitCollection}"`);
+                await collectionPage.clickConfirmation(CONFIRMATION.submitCollection);
+                await browser.pause(4000);
+
+                const src = await browser.getPageSource();
+                writeFileSync(resolve(process.cwd(), 'mobile', 'after_submit_all_dump.xml'), src, 'utf8');
+                console.log('>>> SUBMIT_ALL_STEP DONE');
+            } catch (e) {
+                console.log('>>> SUBMIT_ALL_STEP ERROR:', e.message);
+                const src = await browser.getPageSource().catch(() => '');
+                if (src) writeFileSync(resolve(process.cwd(), 'mobile', 'submit_all_error_dump.xml'), src, 'utf8');
+            }
         });
     });
 });

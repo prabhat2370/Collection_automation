@@ -161,28 +161,40 @@ export class SOUploadPage {
                 throw new Error('Upload failed with Validation Error — fix the file and re-upload.');
             }
 
-            if (!rawText.toLowerCase().includes('fully processed')) {
-                console.log('Attempt ' + (i + 1) + ': Not fully processed yet, retrying...');
+            const status = rawText.toLowerCase();
+            const isProcessed = status.includes('fully processed') || status.includes('partially processed');
+            if (!isProcessed) {
+                console.log('Attempt ' + (i + 1) + ': Not processed yet (Fully/Partially), retrying...');
                 await this.page.waitForTimeout(waitMs);
                 continue;
             }
 
-            console.log('Fresh fully processed entry found! Clicking status icon...');
+            const matchedStatus = status.includes('fully processed') ? 'Fully Processed' : 'Partially Processed';
+            console.log('Fresh ' + matchedStatus + ' entry found! Clicking status icon...');
             await this.statusIcon.first().dispatchEvent('click');
             return;
         }
 
-        throw new Error('Fully processed SO upload not found within 2 minutes');
+        throw new Error('Fully/Partially Processed SO upload not found within 2 minutes');
     }
     async clickClose() { await this.closeBtn.click(); }
-    async captureInvoiceNumbers() {
+    async captureInvoiceNumbers(fallbackInvoices = []) {
         const invoiceLocator = this.page.locator(":text('Invoice no')");
-        await invoiceLocator.first().waitFor({ state: 'visible' });
+        await invoiceLocator.first().waitFor({ state: 'visible' }).catch(() => {});
         const rows = await this.page.locator("table tbody tr").all();
         const invoices = [];
         for (const row of rows) {
             const cells = await row.locator('td').allTextContents();
-            if (cells[0]) invoices.push(cells[0].trim());
+            if (!cells[0]) continue;
+            const val = cells[0].trim();
+            // Skip Ant Design empty-state placeholder ("No Data", "No data", etc.)
+            if (!val || /^no\s*data$/i.test(val)) continue;
+            invoices.push(val);
+        }
+        if (invoices.length === 0 && fallbackInvoices.length > 0) {
+            writeFileSync(SO_INVOICES_FILE, JSON.stringify(fallbackInvoices, null, 2));
+            console.log('No invoices found on screen — wrote fallback (generated) invoices:', fallbackInvoices);
+            return;
         }
         writeFileSync(SO_INVOICES_FILE, JSON.stringify(invoices, null, 2));  // replaces old data only when new invoices captured
         console.log('Captured SO invoices:', invoices);

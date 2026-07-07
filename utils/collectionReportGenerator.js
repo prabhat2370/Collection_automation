@@ -128,18 +128,38 @@ function generateRandomSunpureInvoiceNo() {
  * match), and writes back to the same path preserving EOL style. Every other column is kept
  * byte-for-byte intact. Each data row gets its own unique invoice number.
  *
- * @param {string} filePath - Absolute path to Sunpure SO CSV (read + written in place)
+ * @param {string} filePath - Absolute path to Sunpure SO CSV (read as source)
+ * @param {number} [invoiceCount] - If a positive integer, keep only the header + first N data
+ *   rows (each row = one unique invoice). Omit / null / <= 0 → all rows (default).
+ * @param {string} [outPath] - Where to write the prepared CSV. Defaults to `filePath` (in place).
+ *   Pass a runtime path when capping so the source fixture keeps its full row count.
  * @returns {string[]} unique invoice numbers generated, in row order
  */
-export function prepareSunpureSOUploadFile(filePath) {
+export function prepareSunpureSOUploadFile(filePath, invoiceCount, outPath) {
     const text = readFileSync(filePath, 'utf8');
     const eol = text.includes('\r\n') ? '\r\n' : '\n';
-    const lines = text.split(/\r?\n/);
+    let lines = text.split(/\r?\n/);
     if (lines.length < 2) throw new Error(`No data rows in: ${filePath}`);
 
     const headers = splitCsvLine(lines[0]).map(h => h.replace(/^"|"$/g, '').trim().toLowerCase());
     const colIdx = headers.findIndex(h => h === 'sales invoice no');
     if (colIdx < 0) throw new Error(`"Sales Invoice No" column not found in: ${filePath}`);
+
+    // Optionally cap to the first N non-empty data rows (one invoice per row).
+    const limit = Number.isInteger(invoiceCount) && invoiceCount > 0 ? invoiceCount : null;
+    if (limit) {
+        const kept = [lines[0]];
+        let dataRows = 0;
+        for (let i = 1; i < lines.length && dataRows < limit; i++) {
+            if (lines[i].trim() === '') continue;
+            kept.push(lines[i]);
+            dataRows++;
+        }
+        if (dataRows < limit) {
+            console.log(`[SOPrep][Sunpure] Requested ${limit} invoices but file only has ${dataRows} data rows — using all.`);
+        }
+        lines = kept;
+    }
 
     const assigned = [];
     const seen = new Set();
@@ -154,8 +174,9 @@ export function prepareSunpureSOUploadFile(filePath) {
         assigned.push(inv);
         return fields.join(',');
     });
-    writeFileSync(filePath, newLines.join(eol));
-    console.log(`[SOPrep][Sunpure] (${assigned.length} rows) → ${filePath}: [${assigned.join(', ')}]`);
+    const target = outPath || filePath;
+    writeFileSync(target, newLines.join(eol));
+    console.log(`[SOPrep][Sunpure] (${assigned.length} rows${limit ? `, capped to ${limit}` : ''}) → ${target}: [${assigned.join(', ')}]`);
     return assigned;
 }
 

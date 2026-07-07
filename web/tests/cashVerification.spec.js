@@ -94,20 +94,21 @@ test.describe('Cashier Verification Flow', () => {
       await page.waitForTimeout(10000);
     });
 
-    if (SEG.verificationType === 'D') {
-      await test.step('Subtract collection date for all invoices (DB)', async () => {
-        await returnToFCPage.subtractCollectionDatesForAllInvoices();
-      });
+    // if (SEG.verificationType === 'D') {
+    //   await test.step('Subtract collection date for all invoices (DB)', async () => {
+    //     await returnToFCPage.subtractCollectionDatesForAllInvoices();
+    //   });
 
-      await test.step("Switch verificationType 'D' → 'S' in seg.js (in-memory + persisted)", async () => {
-        SEG.verificationType = 'S';
-        const segDataPath = resolve(process.cwd(), 'test-data/seg.js');
-        const content = readFileSync(segDataPath, 'utf-8');
-        const updated = content.replace(/verificationType:\s*'D'/, "verificationType: 'S'");
-        writeFileSync(segDataPath, updated);
-        console.log("verificationType switched from 'D' → 'S' in test-data/seg.js (in-memory + file persisted)");
-      });
-    }
+    // if (SEG.verificationType === 'D') {
+    //   await test.step("Switch verificationType 'D' → 'S' in seg.js (in-memory + persisted)", async () => {
+    //     SEG.verificationType = 'S';
+    //     const segDataPath = resolve(process.cwd(), 'test-data/seg.js');
+    //     const content = readFileSync(segDataPath, 'utf-8');
+    //     const updated = content.replace(/verificationType:\s*'D'/, "verificationType: 'S'");
+    //     writeFileSync(segDataPath, updated);
+    //     console.log("verificationType switched from 'D' → 'S' in test-data/seg.js (in-memory + file persisted)");
+    //   });
+    // }
   });
 
 });

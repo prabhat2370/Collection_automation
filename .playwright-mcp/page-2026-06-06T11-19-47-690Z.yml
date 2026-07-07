@@ -1,0 +1,21 @@
+- generic [ref=e3]:
+  - img "Home Bg image" [ref=e5]
+  - generic [ref=e6]:
+    - img "home"
+    - generic [ref=e7]: CDMS
+    - generic [ref=e9]:
+      - generic [ref=e12]:
+        - generic [ref=e15]:
+          - img "User ID" [ref=e16]
+          - generic [ref=e17]: User ID
+        - textbox "User ID User ID" [ref=e21]
+      - generic [ref=e24]:
+        - generic [ref=e27]:
+          - img "Password" [ref=e28]
+          - generic [ref=e29]: Password
+        - generic [ref=e33]:
+          - textbox "Password Password" [ref=e34]
+          - img "eye-invisible" [ref=e36] [cursor=pointer]:
+            - img [ref=e37]
+      - button "Login" [ref=e42] [cursor=pointer]:
+        - generic [ref=e43]: Login
