@@ -1,0 +1,36 @@
+
+> collection_auto@1.0.0 so
+> npx playwright test --config web/playwright.config.js web/tests/soUpload.spec.js --headed
+
+
+Running 1 test using 1 worker
+
+[1A[2K[1/1] [chromium] › web\tests\soUpload.spec.js:49:5 › SO Upload Flow › Upload SO files for BGRD: Begur Road / SNPR: Sunpure
+[1A[2K[chromium] › web\tests\soUpload.spec.js:49:5 › SO Upload Flow › Upload SO files for BGRD: Begur Road / SNPR: Sunpure
+[SOPrep][Sunpure] (5 rows) → test-data/fixtures/S0_122555_sunpure.csv: [SUNInv576THP, SUNInv234PHM, SUNInv456CNU, SUNInv416QCX, SUNInv728GQI]
+
+[1A[2K[Observe] Screenshot saved to: c:\Users\User\Desktop\Collection_Auto\utils\afterSubmit.png
+
+[1A[2K[Observe] Modal still visible after Submit: [33mfalse[39m
+
+[1A[2KAttempt 1: Status: Processing... 27/05/2026, 12:11 PM
+
+[1A[2KAttempt 1: age 30s
+
+[1A[2KAttempt 1: Not processed yet (Fully/Partially), retrying...
+
+[1A[2KAttempt 2: Status: Fully Processed 27/05/2026, 12:11 PM
+
+[1A[2KAttempt 2: age 45s
+
+[1A[2KFresh Fully Processed entry found! Clicking status icon...
+
+[1A[2KNo invoices found on screen — wrote fallback (generated) invoices: [
+  [32m'SUNInv576THP'[39m,
+  [32m'SUNInv234PHM'[39m,
+  [32m'SUNInv456CNU'[39m,
+  [32m'SUNInv416QCX'[39m,
+  [32m'SUNInv728GQI'[39m
+]
+
+[1A[2K  1 passed (1.5m)

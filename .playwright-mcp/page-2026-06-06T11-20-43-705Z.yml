@@ -1,0 +1,152 @@
+- generic [ref=e47]:
+  - navigation [ref=e48]:
+    - img "home" [ref=e50]
+    - generic [ref=e51]:
+      - menu [ref=e54]:
+        - menuitem "Dashboard" [ref=e55] [cursor=pointer]:
+          - img [ref=e57]
+          - link "Dashboard" [ref=e60]:
+            - /url: /dashboard
+        - menuitem "Finance Management" [ref=e61] [cursor=pointer]:
+          - img [ref=e63]
+          - generic [ref=e66]: Finance Management
+        - menuitem "Collections Overview" [ref=e67] [cursor=pointer]:
+          - img [ref=e69]
+          - generic [ref=e75]: Collections Overview
+        - menuitem "desktop Collection Settlement" [ref=e76] [cursor=pointer]:
+          - img "desktop" [ref=e78]:
+            - img [ref=e79]
+          - link "Collection Settlement" [active] [ref=e82]:
+            - /url: /cashier
+        - menuitem "file Bank Settlement" [ref=e83] [cursor=pointer]:
+          - img "file" [ref=e85]:
+            - img [ref=e86]
+          - link "Bank Settlement" [ref=e89]:
+            - /url: /bank-settlement/history
+        - menuitem "Cheque Bounce" [ref=e90] [cursor=pointer]:
+          - img [ref=e92]
+          - link "Cheque Bounce" [ref=e97]:
+            - /url: /cheque-bounce
+        - menuitem "Downloads" [ref=e98] [cursor=pointer]:
+          - img [ref=e100]
+          - link "Downloads" [ref=e103]:
+            - /url: /downloads
+      - button "left Collapse" [ref=e105] [cursor=pointer]:
+        - img "left" [ref=e106]:
+          - img [ref=e107]
+        - generic [ref=e109]: Collapse
+  - generic [ref=e110]:
+    - generic [ref=e111]:
+      - generic [ref=e112]:
+        - link "home" [ref=e113] [cursor=pointer]:
+          - /url: /dashboard
+          - img "home" [ref=e114]
+        - generic [ref=e115]: ">"
+        - link "Cashier Dashboard" [ref=e184] [cursor=pointer]:
+          - /url: /cashier
+      - generic [ref=e117]:
+        - generic [ref=e118]:
+          - generic "New Theme" [ref=e119] [cursor=pointer]
+          - generic "Orange Theme" [ref=e120] [cursor=pointer]
+        - generic [ref=e121] [cursor=pointer]:
+          - generic [ref=e122]:
+            - generic [ref=e123]: cash2 segcash2
+            - generic [ref=e124]: cashobc2@ripplr.in
+          - generic [ref=e125]: cs
+    - generic [ref=e185]:
+      - generic [ref=e186]:
+        - generic [ref=e187]:
+          - generic [ref=e188]:
+            - generic [ref=e189]: Search
+            - generic [ref=e190]:
+              - img [ref=e192]
+              - textbox "Search by Name / Phone Number" [ref=e196]
+          - generic [ref=e198]:
+            - generic [ref=e199]:
+              - generic [ref=e200] [cursor=pointer]: Salesperson
+              - generic [ref=e201] [cursor=pointer]: Deliverer
+            - generic [ref=e204]:
+              - textbox "06-Jun-2026" [ref=e205]:
+                - /placeholder: Select date
+              - generic:
+                - img "dateIcon"
+        - generic [ref=e207]:
+          - generic [ref=e208]:
+            - img "totalBillBack" [ref=e209]
+            - generic [ref=e210]:
+              - generic [ref=e211]: Ready For Verification
+              - generic [ref=e212]: "0"
+          - generic [ref=e214]:
+            - img "cash" [ref=e215]
+            - generic [ref=e216]:
+              - generic [ref=e217]: Total Cash
+              - generic [ref=e218]: ₹0
+          - generic [ref=e220]:
+            - img "cheque" [ref=e221]
+            - generic [ref=e222]:
+              - generic [ref=e223]: Total Cheque
+              - generic [ref=e224]: ₹0
+          - generic [ref=e226]:
+            - img "utr" [ref=e227]
+            - generic [ref=e228]:
+              - generic [ref=e229]: Total UPI
+              - generic [ref=e230]: ₹0
+          - generic [ref=e232]:
+            - img "online" [ref=e233]
+            - generic [ref=e234]:
+              - generic [ref=e235]: Total NEFT
+              - generic [ref=e236]: ₹0
+          - img "pending" [ref=e238] [cursor=pointer]
+      - generic [ref=e241]:
+        - table [ref=e245]:
+          - rowgroup [ref=e258]:
+            - row "Name Brand filter Phone Total Invoice Collected Amount Cash Cheque UPI NEFT Verification filter Error Remarks" [ref=e259]:
+              - columnheader "Name" [ref=e260]
+              - columnheader "Brand filter" [ref=e261]:
+                - generic [ref=e262]:
+                  - generic [ref=e263]: Brand
+                  - button "filter" [ref=e264] [cursor=pointer]:
+                    - img "filter" [ref=e265]:
+                      - img [ref=e266]
+              - columnheader "Phone" [ref=e268]
+              - columnheader "Total Invoice" [ref=e269]
+              - columnheader "Collected Amount" [ref=e270]
+              - columnheader "Cash" [ref=e271]
+              - columnheader "Cheque" [ref=e272]
+              - columnheader "UPI" [ref=e273]
+              - columnheader "NEFT" [ref=e274]
+              - columnheader "Verification filter" [ref=e275]:
+                - generic [ref=e276]:
+                  - generic [ref=e277]: Verification
+                  - button "filter" [ref=e278] [cursor=pointer]:
+                    - img "filter" [ref=e279]:
+                      - img [ref=e280]
+              - columnheader "Error" [ref=e282]
+              - columnheader "Remarks" [ref=e283]
+          - rowgroup [ref=e284]:
+            - row "Klsdhfbd Sunpure 9874653743 1 ₹33 ₹0 ₹33 ₹0 ₹0 Pending addRemarks" [ref=e285]:
+              - cell "Klsdhfbd" [ref=e286]
+              - cell "Sunpure" [ref=e287]
+              - cell "9874653743" [ref=e288]
+              - cell "1" [ref=e289]
+              - cell "₹33" [ref=e290]
+              - cell "₹0" [ref=e291]
+              - cell "₹33" [ref=e292]
+              - cell "₹0" [ref=e293]
+              - cell "₹0" [ref=e294]
+              - cell "Pending" [ref=e295]:
+                - generic [ref=e297] [cursor=pointer]: Pending
+              - cell [ref=e298]
+              - cell "addRemarks" [ref=e299]:
+                - img "addRemarks" [ref=e301] [cursor=pointer]
+        - list [ref=e302]:
+          - listitem "Previous Page" [ref=e303]:
+            - button "left" [disabled] [ref=e304]:
+              - img "left" [ref=e305]:
+                - img [ref=e306]
+          - listitem "1" [ref=e308] [cursor=pointer]:
+            - generic [ref=e309]: "1"
+          - listitem "Next Page" [ref=e310]:
+            - button "right" [disabled] [ref=e311]:
+              - img "right" [ref=e312]:
+                - img [ref=e313]

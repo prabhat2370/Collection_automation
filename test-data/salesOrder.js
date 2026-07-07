@@ -9,12 +9,14 @@
  *                            'single' (1 file: combined CSV)
  *   - files                → keyed by upload kind: { soReport, invoiceReport, salesRegister } for
  *                            multi, or { upload } for single
+ *   - invoiceCount         → (single mode only) positive integer to upload only the first N line
+ *                            items; null/omitted uploads every row in the file.
  */
 export const SALES_ORDER_BRANDS = {
     britannia: {
-        fc: 'CMBT: Coimbatore',
-        fcSearch: 'CMBT',
-        fcId: 16,
+        fc: 'BTML: BTM',
+        fcSearch: 'BTML',
+        fcId: 2,
         brand: 'BRIT: Britannia',
         brandSearch: 'BRIT',
         brandId: 4,
@@ -33,6 +35,7 @@ export const SALES_ORDER_BRANDS = {
         brandSearch: 'SNPR',
         brandId: 39,
         mode: 'single',
+        invoiceCount: 1, // e.g. 3 → upload only first 3 line items; null → all rows
         files: {
             upload: 'test-data/fixtures/S0_122555_sunpure.csv',
         },

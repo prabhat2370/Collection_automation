@@ -216,6 +216,22 @@ export async function subtractCollectionDate(invoiceNo) {
     return runQuery(sql, [invoiceNo]);
 }
 
+/**
+ * Marks every collection_invoices line for the given invoice_no as VerifiedByCashier.
+ * Used when the Allocation "Some invoices cannot be assigned" modal blocks an invoice
+ * because it still has unverified cashier status — flipping the status unblocks assignment.
+ * WHERE invoice_no = ? updates all lines for that invoice (mirrors the manual query:
+ *   SELECT * FROM collection_invoices WHERE invoice_no IN ("<invoiceNo>");)
+ */
+export async function markInvoiceVerifiedByCashier(invoiceNo) {
+    const sql = `
+        UPDATE collection_invoices
+        SET invoice_verification_status = 'VerifiedByCashier'
+        WHERE invoice_no = ?
+    `;
+    return runQuery(sql, [invoiceNo]);
+}
+
 export async function insertBankStatement(paymentMode, refNumber, amount) {
     const sql = `
         INSERT INTO bank_statement_api (

@@ -1,0 +1,20 @@
+[    1402ms] [LOG] %cWelcome to Ripplr CDMS App - production - preprod - baseUrl https://api-cdms-preprod.ripplr.in/api/ 2.0.9 background: #46C2B6; color: #113F5F; font-size: 12px @ https://cdms-preprod.ripplr.in/static/js/main.3b49aee3.js:1
+[    1402ms] [LOG] %cS3 Details - ripplrwave-dev - ap-south-1:60e7310b-a35b-4daa-bb7c-93a2258544ce - ap-south-1  background: #46C2B6; color: #113F5F; font-size: 12px @ https://cdms-preprod.ripplr.in/static/js/main.3b49aee3.js:1
+[    1551ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o @ https://cdms-preprod.ripplr.in/login:0
+[   25232ms] [ERROR] Failed to get location: GeolocationPositionError @ https://cdms-preprod.ripplr.in/static/js/main.3b49aee3.js:1
+[   25544ms] [LOG] Login api done 1 @ https://cdms-preprod.ripplr.in/static/js/main.3b49aee3.js:1
+[   47864ms] [WARNING] Deprecation warning: value provided is not in a recognized RFC2822 or ISO format. moment construction falls back to js Date(), which is not reliable across all browsers and versions. Non RFC2822/ISO date formats are discouraged. Please refer to http://momentjs.com/guides/#/warnings/js-date/ for more info.
+Arguments: 
+[0] _isAMomentObject: true, _isUTC: false, _useUTC: false, _l: undefined, _i: 06-Jun-2026, _f: undefined, _strict: undefined, _locale: [object Object]
+Error
+    at n.createFromInputFallback (https://cdms-preprod.ripplr.in/static/js/main.3b49aee3.js:2:1003135)
+    at jr (https://cdms-preprod.ripplr.in/static/js/main.3b49aee3.js:2:1027576)
+    at Wr (https://cdms-preprod.ripplr.in/static/js/main.3b49aee3.js:2:1030922)
+    at Hr (https://cdms-preprod.ripplr.in/static/js/main.3b49aee3.js:2:1030788)
+    at zr (https://cdms-preprod.ripplr.in/static/js/main.3b49aee3.js:2:1030506)
+    at Kr (https://cdms-preprod.ripplr.in/static/js/main.3b49aee3.js:2:1031280)
+    at Yr (https://cdms-preprod.ripplr.in/static/js/main.3b49aee3.js:2:1031314)
+    at n (https://cdms-preprod.ripplr.in/static/js/main.3b49aee3.js:2:1000008)
+    at mX (https://cdms-preprod.ripplr.in/static/js/main.3b49aee3.js:2:6988927)
+    at xa (https://cdms-preprod.ripplr.in/static/js/main.3b49aee3.js:2:1668657) @ https://cdms-preprod.ripplr.in/static/js/main.3b49aee3.js:1
+[   47912ms] [LOG] pathname /dashboard @ https://cdms-preprod.ripplr.in/static/js/main.3b49aee3.js:1

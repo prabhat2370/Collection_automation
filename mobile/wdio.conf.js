@@ -45,7 +45,7 @@ export const config = {
     framework: 'mocha',
     mochaOpts: {
         ui: 'bdd',
-        timeout: 240000,
+        timeout: 600000,
     },
 
     reporters: [

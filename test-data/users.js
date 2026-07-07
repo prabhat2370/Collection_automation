@@ -4,19 +4,15 @@ export const USERS = {
         password: 'M@ver!ck',
     },
     seg: {
-        email: 'seg4@ripplr.in',
+        email: 'segobc2@ripplr.in',
         password: 'Ripplr@123',
     },
     collection: {
-        mobile: '9886996369',
+        mobile: '8765434567',
         pin: '1234',
     },
     cash: {
-        email: 'cash4@ripplr.in',
-        password: 'Ripplr@123',
-    },
-    segCA: {
-        email: 'segobc2@ripplr.in',
+        email: 'cashobc2@ripplr.in',
         password: 'Ripplr@123',
     },
 };

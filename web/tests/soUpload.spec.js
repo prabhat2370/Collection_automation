@@ -1,3 +1,4 @@
+import { resolve } from 'path';
 import { test } from '@playwright/test';
 import { SOUploadPage } from '../pages/soUploadPage';
 import { loginAs } from '../../utils/auth.js';
@@ -65,11 +66,19 @@ test.describe('SO Upload Flow', () => {
         await soUploadPage.selectBrand(cfg.brandSearch, cfg.brand);
       });
 
+      let generatedInvoices = [];
+      let singleUploadPath = cfg.files.upload;
       await test.step('Prepare SO files with fresh invoice numbers', async () => {
         if (cfg.mode === 'multi') {
-          prepareSOUploadFiles(cfg.files.soReport, cfg.files.invoiceReport, cfg.files.salesRegister);
+          generatedInvoices = prepareSOUploadFiles(cfg.files.soReport, cfg.files.invoiceReport, cfg.files.salesRegister) || [];
         } else {
-          prepareSunpureSOUploadFile(cfg.files.upload);
+          // When capping to N invoices, write the prepared file to a runtime copy so the source
+          // fixture keeps its full row count; otherwise prepare in place as before.
+          const cap = Number.isInteger(cfg.invoiceCount) && cfg.invoiceCount > 0 ? cfg.invoiceCount : null;
+          singleUploadPath = cap
+            ? resolve(process.cwd(), 'test-data/runtime/sunpure_so_upload.csv')
+            : cfg.files.upload;
+          generatedInvoices = prepareSunpureSOUploadFile(cfg.files.upload, cap, cap ? singleUploadPath : undefined) || [];
         }
       });
 
@@ -79,7 +88,7 @@ test.describe('SO Upload Flow', () => {
           await soUploadPage.uploadInvoiceReport(cfg.files.invoiceReport);
           await soUploadPage.uploadSalesRegister(cfg.files.salesRegister);
         } else {
-          await soUploadPage.uploadSingleFile(cfg.files.upload);
+          await soUploadPage.uploadSingleFile(singleUploadPath);
         }
       });
 
@@ -94,7 +103,7 @@ test.describe('SO Upload Flow', () => {
         await soUploadPage.clickSearch();
         await soUploadPage.waitForFullyProcessedAndClickStatus();
         await page.waitForTimeout(3000);
-        await soUploadPage.captureInvoiceNumbers();
+        await soUploadPage.captureInvoiceNumbers(generatedInvoices);
       });
     });
   }

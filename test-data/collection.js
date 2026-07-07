@@ -14,8 +14,8 @@ export const CONFIRMATION = {
 };
 
 export const AMOUNTS = {
-    cash: '15',
-    cheque: '25',
-    qr: '5',
-    neft: '20',
+    cash: '4',
+    cheque: '5',
+    qr: '2',
+    neft: '3',
 };

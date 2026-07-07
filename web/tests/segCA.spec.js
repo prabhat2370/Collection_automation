@@ -4,6 +4,7 @@ import { resolve } from 'path';
 import { SegCAPage } from '../pages/segCAPage';
 import { ObcEliminationPage } from '../pages/obcEliminationPage';
 import { loginAs, logout } from '../../utils/auth.js';
+import { markInvoiceVerifiedByCashier } from '../../utils/dbHelper.js';
 import { USERS } from '../../test-data/users.js';
 
 const SUNPURE_PLAIN_CA_CONFIG = {
@@ -51,7 +52,7 @@ test.describe('Seg Credit Adjustment Flow', () => {
     test.setTimeout(300_000);
 
     await test.step('Login as Seg CA', async () => {
-      await loginAs(page, 'segCA');
+      await loginAs(page, 'seg');
     });
 
     await test.step('Open Allocation and select FC = Begur Road, Brand = Sunpure', async () => {
@@ -77,9 +78,7 @@ test.describe('Seg Credit Adjustment Flow', () => {
     });
 
     await test.step('Pick salesman and confirm assignment', async () => {
-      await segCAPage.selectSalesmanDropdown.click();
-      await page.waitForTimeout(1000);
-      await segCAPage.salesmanOption(USERS.collection.mobile).click();
+      await segCAPage.selectSalesmanByMobile(USERS.collection.mobile);
       await page.waitForTimeout(1000);
       await segCAPage.confirmAssignmentBtn.click();
       await page.waitForTimeout(2000);
@@ -130,9 +129,85 @@ test.describe('Seg Credit Adjustment Flow', () => {
       await page.waitForTimeout(5000);
 
       console.log('Credit Adjustment upload submitted for', SUNPURE_PLAIN_CA_CONFIG.brand);
+
+      // Give the backend time to process the CA upload before retrying assignment
+      await page.waitForTimeout(15000);
+
+      // Log back in as Seg and replay the assignment so the flow can reach Handover Invoices
+      await logout(page);
+      await loginAs(page, 'seg');
+
+      await segCAPage.allocationLink.click();
+      await page.waitForTimeout(1000);
+      await segCAPage.selectFcDropdown.click();
+      await page.waitForTimeout(1000);
+      await segCAPage.fcOption.click();
+      await page.waitForTimeout(1000);
+      await segCAPage.selectBrandDropdown.click();
+      await page.waitForTimeout(1000);
+      await segCAPage.brandOption.click();
+      await page.waitForTimeout(1000);
+      await segCAPage.continueBtn.click();
+      await page.waitForTimeout(3000);
+
+      await segCAPage.selectInvoiceCheckboxes(invoices);
+      await page.waitForTimeout(1000);
+      await segCAPage.assignBtn.click();
+      await page.waitForTimeout(1000);
+
+      await segCAPage.selectSalesmanByMobile(USERS.collection.mobile);
+      await page.waitForTimeout(1000);
+      await segCAPage.confirmAssignmentBtn.click();
+      await page.waitForTimeout(2000);
+
+      await segCAPage.clickRemoveAndContinueIfVisible();
+      await page.waitForTimeout(1000);
     });
 
-    await test.step('Cancel "Some invoices cannot be assigned" if shown', async () => {
+    await test.step('Handle "Some invoices cannot be assigned" — mark VerifiedByCashier and retry assignment', async () => {
+      const blocked = await segCAPage.extractUnassignableInvoices(3000);
+      if (blocked.length === 0) {
+        console.log('No blocked invoices — skipping cashier-verification fix.');
+        return;
+      }
+
+      console.log(`Marking ${blocked.length} invoice(s) VerifiedByCashier in DB: ${blocked.join(', ')}`);
+      for (const inv of blocked) {
+        const res = await markInvoiceVerifiedByCashier(inv);
+        console.log(`  ${inv}: ${res.affectedRows} row(s) updated.`);
+      }
+
+      // Dismiss the modal, then replay the assignment now that verification is fixed.
+      await segCAPage.someInvoicesCancelBtn.first().click().catch(() => {});
+      await page.waitForTimeout(2000);
+
+      await segCAPage.allocationLink.click();
+      await page.waitForTimeout(1000);
+      await segCAPage.selectFcDropdown.click();
+      await page.waitForTimeout(1000);
+      await segCAPage.fcOption.click();
+      await page.waitForTimeout(1000);
+      await segCAPage.selectBrandDropdown.click();
+      await page.waitForTimeout(1000);
+      await segCAPage.brandOption.click();
+      await page.waitForTimeout(1000);
+      await segCAPage.continueBtn.click();
+      await page.waitForTimeout(3000);
+
+      await segCAPage.selectInvoiceCheckboxes(invoices);
+      await page.waitForTimeout(1000);
+      await segCAPage.assignBtn.click();
+      await page.waitForTimeout(1000);
+
+      await segCAPage.selectSalesmanByMobile(USERS.collection.mobile);
+      await page.waitForTimeout(1000);
+      await segCAPage.confirmAssignmentBtn.click();
+      await page.waitForTimeout(2000);
+
+      await segCAPage.clickRemoveAndContinueIfVisible();
+      await page.waitForTimeout(1000);
+
+      // If the modal still appears (e.g. residual blocked invoices), cancel to proceed.
       await segCAPage.clickCancelIfSomeInvoicesCannotBeAssigned();
       await page.waitForTimeout(2000);
     });
@@ -149,7 +224,7 @@ test.describe('Seg Credit Adjustment Flow', () => {
     });
 
     await test.step('Open Handover Invoices', async () => {
-      await segCAPage.handoverInvoicesBtn.click();
+      await segCAPage.clickHandoverInvoices();
       await page.waitForTimeout(2000);
     });
 

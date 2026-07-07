@@ -23,7 +23,31 @@ export class CollectionAppPage extends BaseAppPage {
     }
 
     async fillCash(amount) {
-        await this.typeIntoEditText(LOCATORS.collection.cashInput, amount);
+        // The Flutter cash widget exposes one EditText whose bounds span the
+        // ENTIRE cash card (header + limits + input box). WDIO's el.click()
+        // taps the geometric center, which lands on the "Store Cash Limit"
+        // header — focus never moves to the actual input. We must tap the
+        // bottom ~75% of the bounds to hit the "Enter Cash Amount" box.
+        const el = await $(LOCATORS.collection.cashInput);
+        await el.waitForExist({ timeout: 15000 });
+        const loc = await el.getLocation();
+        const size = await el.getSize();
+        const tapX = Math.round(loc.x + size.width / 2);
+        const tapY = Math.round(loc.y + size.height * 0.78);
+        await browser.execute('mobile: clickGesture', { x: tapX, y: tapY });
+        await browser.pause(700);
+        // Clear any pre-existing value via accessibility action.
+        await el.clearValue().catch(() => {});
+        await browser.pause(300);
+        // Re-tap to ensure focus is on the input (clearValue may have blurred).
+        await browser.execute('mobile: clickGesture', { x: tapX, y: tapY });
+        await browser.pause(500);
+        // Type via mobile: type — adb input text goes to the active IME, which
+        // Flutter listens to once the input has focus.
+        await browser.execute('mobile: type', { text: String(amount) });
+        await browser.pause(500);
+        await this.hideKeyboard();
+        await browser.pause(500);
     }
 
     /** Tap-by-bounds + keyboard typing — robust against Flutter EditText focus issues. */
@@ -47,7 +71,8 @@ export class CollectionAppPage extends BaseAppPage {
         }
         await browser.execute('mobile: clickGesture', { x: bounds.x, y: bounds.y });
         await browser.pause(700);
-        await browser.keys(String(value).split(''));
+        // Atomic input — see typeAtCoords for rationale.
+        await browser.execute('mobile: type', { text: String(value) });
         await browser.pause(400);
         await this.hideKeyboard();
         await browser.pause(500);
@@ -57,7 +82,10 @@ export class CollectionAppPage extends BaseAppPage {
     async typeAtCoords(x, y, value) {
         await browser.execute('mobile: clickGesture', { x, y });
         await browser.pause(800);
-        await browser.keys(String(value).split(''));
+        // Atomic input via `adb input text` — sends the full string in one call.
+        // Per-char `browser.keys(split(''))` is ~14× slower and races with Flutter
+        // EditText remounts, sometimes crashing UiAutomator2 mid-typing.
+        await browser.execute('mobile: type', { text: String(value) });
         await browser.pause(400);
         await this.hideKeyboard();
         await browser.pause(500);
@@ -90,21 +118,21 @@ export class CollectionAppPage extends BaseAppPage {
     }
 
     /**
-     * Search for and select a bank by name in the bank picker.
-     * The picker has a "Search bank by name" EditText at the top — typing into
-     * it filters the list, then we click the matching Button.
+     * Select a bank by name in the bank picker. Tries direct tap first (most
+     * banks are visible without scroll); falls back to scrolling the list if
+     * the target is offscreen. Avoids the picker's search field — querying
+     * `//android.widget.EditText` is ambiguous when the cheque form's
+     * EditTexts are still mounted underneath the bottom sheet.
      */
     async selectBankByName(bankName) {
-        const search = await $('//android.widget.EditText');
-        await search.waitForExist({ timeout: 10000 });
-        await search.click();
-        await browser.pause(500);
-        // setValue sends the whole string in one ADB `input text` call.
-        // browser.keys(split('')) wedges UiAutomator2 on space characters (W3C
-        // actions encodes ' ' as empty value="" which never resolves).
-        await search.setValue(bankName);
-        await browser.pause(1500);
-        await this.waitAndClick(LOCATORS.collection.chequeBankOption(bankName));
+        const bankBtn = await $(LOCATORS.collection.chequeBankOption(bankName));
+        try {
+            await bankBtn.waitForDisplayed({ timeout: 5000 });
+        } catch {
+            await this.scrollToText(bankName).catch(() => {});
+            await bankBtn.waitForDisplayed({ timeout: 5000 });
+        }
+        await bankBtn.click();
         await browser.pause(1500);
     }
 
@@ -161,8 +189,9 @@ export class CollectionAppPage extends BaseAppPage {
 
     async fillNeftRefNumber(amount) {
         const refNumber = genNeftRef();
-        // NEFT Ref Number field is the second EditText in the bottom-sheet — same layout as cheque.
-        await this.typeAtCoords(540, 1110, refNumber);
+        // Target EditText[2] explicitly — coord (540, 1110) lands on the amount
+        // field, not the ref-number field, so per-coord typing overwrote the amount.
+        await this.typeIntoEditText(LOCATORS.collection.neftRefNumber, refNumber);
         saveRef('neft', { refNumber, amount });
     }
 
@@ -220,6 +249,22 @@ export class CollectionAppPage extends BaseAppPage {
 
     async clickSubmitCollection() {
         await this.waitAndClick(LOCATORS.collection.submitCollectionDiv);
+    }
+
+    /**
+     * After submitting a single invoice, the app shows a Returns screen.
+     * "Submit Collection" (batch) only appears once we dismiss it via
+     * "Skip without returns". Returns true if the skip button was clicked.
+     */
+    async clickSkipWithoutReturns(timeoutMs = 15000) {
+        const skip = await $(LOCATORS.collection.skipWithoutReturnsBtn);
+        const visible = await skip.waitForDisplayed({ timeout: timeoutMs })
+            .then(() => true)
+            .catch(() => false);
+        if (!visible) return false;
+        await skip.click();
+        await browser.pause(2500);
+        return true;
     }
 
     async clickConfirmation(answer) {
