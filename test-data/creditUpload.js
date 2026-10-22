@@ -16,11 +16,11 @@ const OBC_BRANDS = {
     },
     sunpure: {
         fc: 'BGRD: Begur Road',
-        brand: 'SNPRMT: Sunpure MT',
+        brand: 'SNPR: Sunpure',
         fcId: 72,
-        brandId: 45,
+        brandId: 39,
         fcSearchText: 'BGRD',
-        brandSearchText: 'SNPRMT',
+        brandSearchText: 'SNPR',
         uploadType: 'Credit Adjustment',
         filePath: 'test-data/fixtures/CollectionReport_SUNPURE.xlsx',
         testAdjustedCrAmount: '1.00',
@@ -51,11 +51,11 @@ const OBC_BRANDS = {
         generateNewFile: 0,
     },
     britannia: {
-        fc: 'CMBT: Coimbatore',
+        fc: 'BTML: BTM',
         brand: 'BRIT: Britannia',
-        fcId: 16,
+        fcId: 2,
         brandId: 4,
-        fcSearchText: 'CMBT',
+        fcSearchText: 'BTML',
         brandSearchText: 'BRIT',
         uploadType: 'Credit Adjustment',
         filePath: 'test-data/fixtures/Credit_Adjutment_BRITANIA.xlsx',
@@ -89,6 +89,6 @@ const OBC_BRANDS = {
 };
 
 // ▶▶▶ CHANGE THIS TO SWITCH BRAND ◀◀◀
-const activeBrand = 'godrej';
+const activeBrand = 'britannia';
 
 export const OBC_ELIMINATION = OBC_BRANDS[activeBrand];

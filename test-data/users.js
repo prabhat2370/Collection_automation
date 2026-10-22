@@ -8,7 +8,7 @@ export const USERS = {
         password: 'Ripplr@123',
     },
     collection: {
-        mobile: '8765434567',
+        mobile: '6575675678',
         pin: '1234',
     },
     cash: {

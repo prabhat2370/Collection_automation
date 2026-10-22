@@ -232,6 +232,19 @@ export async function markInvoiceVerifiedByCashier(invoiceNo) {
     return runQuery(sql, [invoiceNo]);
 }
 
+/**
+ * Closes any stale pending RFC allocation for the given FC so Vehicle Allocation
+ * isn't blocked. Mirrors the manual query:
+ *   UPDATE Allocations SET status = 'CO' WHERE fc_id = ?;
+ * Used when the Delivery Allocation Confirm submission shows:
+ *   "Vehicle allocation is blocked because an RFC for this FC has been open for
+ *   2 days or more. Close the pending RFC to continue."
+ */
+export async function closeStalePendingRFC(fcId) {
+    const sql = `UPDATE Allocations SET status = 'CO' WHERE fc_id = ?`;
+    return runQuery(sql, [fcId]);
+}
+
 export async function insertBankStatement(paymentMode, refNumber, amount) {
     const sql = `
         INSERT INTO bank_statement_api (
