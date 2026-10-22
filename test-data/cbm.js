@@ -15,11 +15,13 @@ function readCollectionCheque() {
 const _savedCheque = readCollectionCheque();
 
 export const CHEQUE_BOUNCE = {
-    chequeBounceNo: _savedCheque.refNumber || '611454',
+    chequeBounceNo: _savedCheque.refNumber || '896464',
     amount: _savedCheque.amount || '',
-    fcText: 'BTM',
-    salesOfficerName: 'Prajwal Kedlaya',
-    salesOfficerMobile: '9902646664',
+    fcText: 'Begur Road',
+    segregatorName: 'segOBC2 SEG',
+    segregatorMobile: '9876545679',
+    salesOfficerName: 'Prabhat kumar',
+    salesOfficerMobile: '8422871402',
 };
 
 export const CBM_SEG = {

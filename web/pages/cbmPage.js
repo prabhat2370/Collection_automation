@@ -64,7 +64,7 @@ export class ChequeBouncePage {
         this.chooseSegregatorSelect = this.page.locator('.ant-select-selector').filter({
             has: this.page.locator(":text('Choose Segregator')")
         });
-        this.segregatorOption    = this.page.locator(":text('Segregator BTML (8888888884)')");
+        this.segregatorOption    = this.page.locator(`:text('${CHEQUE_BOUNCE.segregatorName} (${CHEQUE_BOUNCE.segregatorMobile})')`);
         this.assignChequeBtn     = this.page.locator(":text('Assign Cheque')");
         this.modalCloseBtn       = this.page.locator(":text('Close')");
         this.acknowledgeNowBtn      = this.page.locator(":text('Acknowledge Now')");

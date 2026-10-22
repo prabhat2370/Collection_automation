@@ -14,6 +14,13 @@ function saveRef(key, data) {
     writeFileSync(COLLECTION_REFS_FILE, JSON.stringify(existing, null, 2));
 }
 
+// Splits a comma-separated RFC_COLLECTION value into trimmed, non-empty amount strings.
+// '2' → ['2'] (today's single-value config, unchanged); '2, 32,5' → ['2','32','5']; '' → [].
+function parseAmounts(value) {
+    if (!value) return [];
+    return String(value).split(',').map(s => s.trim()).filter(Boolean);
+}
+
 const STATUS_MAP = {
     D: 'Delivered',
     PD: 'Partial Delivered',
@@ -37,17 +44,18 @@ export class ReturnToFCPage {
         // Collection form locators
         this.invoiceReturnedRadio = this.page.getByRole('radio', { name: 'Invoice Returned' });
         this.cashAmount     = this.page.getByRole('spinbutton', { name: 'Amount' }).nth(0);
-        this.chequeAmount   = this.page.getByRole('spinbutton', { name: 'Amount' }).nth(1);
-        this.chequeNumber   = this.page.getByRole('textbox', { name: 'Cheque Number' });
+        // Bank dropdown's placeholder ("Select Bank") disappears once a row is filled, so this
+        // single unindexed locator always targets the next still-empty row — no per-row index needed.
         this.bankDropdown   = this.page.locator('.ant-select:has(.ant-select-selection-placeholder:text-is("Select Bank"))');
-        this.dueDate        = this.page.getByRole('textbox', { name: 'Due Date' });
         this.pickerPanel    = this.page.locator('.ant-picker-dropdown:visible').first();
         this.todayBtn       = this.page.locator('.ant-picker-dropdown:visible .ant-picker-today-btn');
-        this.upiAmount      = this.page.getByRole('spinbutton', { name: 'Amount' }).nth(2);
-        this.upiRefNumber   = this.page.getByRole('textbox', { name: 'UPI Reference Number' });
-        this.neftAmount     = this.page.getByRole('spinbutton', { name: 'Amount' }).nth(3);
-        this.neftRefNumber  = this.page.getByRole('textbox', { name: 'Reference Number', exact: true });
         this.collectionUpdateBtn = this.page.getByRole('button', { name: 'Update' });
+
+        // "Add <Type>" buttons — append a new row for that payment type. Row 0 of each type
+        // exists by default in the form; these are only clicked before filling rows 1, 2, ...
+        this.addChequeBtn = this.page.locator(":text('Add more cheque')");
+        this.addUpiBtn    = this.page.locator(":text('Add more UPI')");
+        this.addNeftBtn   = this.page.locator(":text('Add more NEFT')");
 
         // Verify invoices + RFC close locators
         this.checkIcon = (invoice) => this.page.locator(`//tr[td[contains(., '${invoice}')]]//td[11]//div[@cursor='pointer'][last()]`);
@@ -65,6 +73,24 @@ export class ReturnToFCPage {
     async clickOK() { await this.okBtn.click(); }
     async clickYes() { await this.yesBtn.click(); }
     async clickUpdate() { await this.updateBtn.click(); }
+
+    // Row-indexed field locators for cheque/UPI/NEFT. All "Amount" spinbuttons share one
+    // accessible name across every type, in fixed visual order (cash, cheque rows, upi rows,
+    // neft rows) — so the i-th field of a given type is reached by counting past cash (always
+    // exactly 1 field) plus every earlier type's already-filled row count. This only extends the
+    // exact role/name selectors the original single-row code already used at fixed indices
+    // 0/1/2/3 — no new/guessed field names.
+    chequeAmountField(i) { return this.page.getByRole('spinbutton', { name: 'Amount' }).nth(1 + i); }
+    chequeNumberField(i) { return this.page.getByRole('textbox', { name: 'Cheque Number' }).nth(i); }
+    dueDateField(i)      { return this.page.getByRole('textbox', { name: 'Due Date' }).nth(i); }
+    upiAmountField(i, chequeCount) {
+        return this.page.getByRole('spinbutton', { name: 'Amount' }).nth(1 + chequeCount + i);
+    }
+    upiRefField(i)       { return this.page.getByRole('textbox', { name: 'UPI Reference Number' }).nth(i); }
+    neftAmountField(i, chequeCount, upiCount) {
+        return this.page.getByRole('spinbutton', { name: 'Amount' }).nth(1 + chequeCount + upiCount + i);
+    }
+    neftRefField(i)      { return this.page.getByRole('textbox', { name: 'Reference Number', exact: true }).nth(i); }
 
     async processAllInvoicesFlow(statusCode, collection) {
         const invoices = JSON.parse(readFileSync(SO_INVOICES_FILE, 'utf-8'));
@@ -137,26 +163,38 @@ export class ReturnToFCPage {
         await this.invoiceReturnedRadio.check();
         await this.page.waitForTimeout(500);
 
-        // Cash — skip if empty
+        // Cash — single value only; no "Add Cash" button exists anywhere in the app.
         if (collection.cash) {
             await this.cashAmount.click();
             await this.cashAmount.fill(collection.cash);
             await this.page.waitForTimeout(500);
         }
 
-        // Cheque — skip if empty
-        if (collection.cheque) {
-            await this.chequeAmount.click();
-            await this.chequeAmount.fill(collection.cheque);
+        // Cheque — one or more comma-separated amounts (RFC_COLLECTION.cheque). Row 0 exists by
+        // default; "Add Cheque" is clicked once per additional row before that row is filled.
+        const chequeAmounts = parseAmounts(collection.cheque);
+        for (let i = 0; i < chequeAmounts.length; i++) {
+            if (i > 0) {
+                await this.addChequeBtn.click();
+                await this.page.waitForTimeout(500);
+            }
+            const amountField = this.chequeAmountField(i);
+            await amountField.click();
+            await amountField.fill(chequeAmounts[i]);
             await this.page.waitForTimeout(1000);
-            await this.chequeNumber.click();
-            await this.chequeNumber.fill(String(100000 + Math.floor(Math.random() * 900000)));
+
+            const numberField = this.chequeNumberField(i);
+            await numberField.click();
+            await numberField.fill(String(100000 + Math.floor(Math.random() * 900000)));
             await this.page.waitForTimeout(300);
+
             await this.bankDropdown.click();
             await this.page.waitForTimeout(500);
             await this.page.locator('.ant-select-item-option').first().click();
             await this.page.waitForTimeout(300);
-            await this.dueDate.click();
+
+            const dueDate = this.dueDateField(i);
+            await dueDate.click();
             await this.page.waitForTimeout(500);
             // Wait for the date-picker panel, then pick today — fall back to the
             // "today" cell (or first selectable cell) if the quick-select button is absent.
@@ -172,31 +210,53 @@ export class ReturnToFCPage {
             await this.page.waitForTimeout(300);
         }
 
-        // UPI — skip if empty
-        if (collection.upi) {
-            await this.upiAmount.click();
-            await this.upiAmount.fill(collection.upi);
+        // UPI — one or more comma-separated amounts, same "Add UPI" pattern.
+        const upiAmounts = parseAmounts(collection.upi);
+        const upiRefs = [];
+        for (let i = 0; i < upiAmounts.length; i++) {
+            if (i > 0) {
+                await this.addUpiBtn.click();
+                await this.page.waitForTimeout(500);
+            }
+            const amountField = this.upiAmountField(i, chequeAmounts.length);
+            await amountField.click();
+            await amountField.fill(upiAmounts[i]);
             await this.page.waitForTimeout(1000);
-            const upiRef = String(Date.now()).padEnd(14, '0').slice(0, 14);
-            await this.upiRefNumber.click();
-            await this.upiRefNumber.fill(upiRef);
-            // Persist so Cash Verification can insert a matching UPI bank statement.
-            saveRef('upi', { refNumber: upiRef, amount: collection.upi });
-            await this.page.waitForTimeout(300);
-        }
 
-        // NEFT — skip if empty
-        if (collection.neft) {
-            await this.neftAmount.click();
-            await this.neftAmount.fill(collection.neft);
-            await this.page.waitForTimeout(1000);
-            const neftRef = String(Date.now()).padEnd(12, '0').slice(0, 12);
-            await this.neftRefNumber.click();
-            await this.neftRefNumber.fill(neftRef);
-            // Persist so Cash Verification can insert a matching NEFT bank statement.
-            saveRef('neft', { refNumber: neftRef, amount: collection.neft });
+            const upiRef = String(Date.now() + i).padEnd(14, '0').slice(0, 14);
+            const refField = this.upiRefField(i);
+            await refField.click();
+            await refField.fill(upiRef);
+            upiRefs.push({ refNumber: upiRef, amount: upiAmounts[i] });
             await this.page.waitForTimeout(300);
         }
+        // Persist every row (not just the last) so Cash Verification can insert a matching
+        // bank statement for EACH UPI payment, not only one.
+        if (upiRefs.length) saveRef('upi', upiRefs);
+
+        // NEFT — one or more comma-separated amounts, same "Add NEFT" pattern.
+        const neftAmounts = parseAmounts(collection.neft);
+        const neftRefs = [];
+        for (let i = 0; i < neftAmounts.length; i++) {
+            if (i > 0) {
+                await this.addNeftBtn.click();
+                await this.page.waitForTimeout(500);
+            }
+            const amountField = this.neftAmountField(i, chequeAmounts.length, upiAmounts.length);
+            await amountField.click();
+            await amountField.fill(neftAmounts[i]);
+            await this.page.waitForTimeout(1000);
+
+            const neftRef = String(Date.now() + i).padEnd(12, '0').slice(0, 12);
+            const refField = this.neftRefField(i);
+            await refField.click();
+            await refField.fill(neftRef);
+            neftRefs.push({ refNumber: neftRef, amount: neftAmounts[i] });
+            await this.page.waitForTimeout(300);
+        }
+        // Persist every row (not just the last) so Cash Verification can insert a matching
+        // bank statement for EACH NEFT payment, not only one.
+        if (neftRefs.length) saveRef('neft', neftRefs);
     }
 
     async clickCollectionUpdate() { await this.collectionUpdateBtn.click(); }

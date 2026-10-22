@@ -19,6 +19,9 @@ export const DELIVERY = {
     driverName: 'Lakshman pad',
     driverMobile: '8303111111',
     vendor: 'Lakshman pad',
+    // Must match the option text in the Allocation modal's "Delivery Boy *" dropdown exactly.
+    // This option sits below the initial visible window, so the list is scrolled to reach it.
+    deliveryBoy: 'Delivery Boy',
     // D = Delivered, PD = Partial Delivered, DA = Delivery Attempted, C = Cancelled
     deliveryStatus: 'D',
 };

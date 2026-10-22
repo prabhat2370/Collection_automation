@@ -72,13 +72,22 @@ test.describe('SO Upload Flow', () => {
         if (cfg.mode === 'multi') {
           generatedInvoices = prepareSOUploadFiles(cfg.files.soReport, cfg.files.invoiceReport, cfg.files.salesRegister) || [];
         } else {
-          // When capping to N invoices, write the prepared file to a runtime copy so the source
-          // fixture keeps its full row count; otherwise prepare in place as before.
-          const cap = Number.isInteger(cfg.invoiceCount) && cfg.invoiceCount > 0 ? cfg.invoiceCount : null;
-          singleUploadPath = cap
-            ? resolve(process.cwd(), 'test-data/runtime/sunpure_so_upload.csv')
+          // Resolve where the source CSV is read from: repo fixture ('testdata') or a machine
+          // path ('system', e.g. a freshly-exported file in Downloads).
+          const fromSystem = String(cfg.uploadSource).toLowerCase() === 'system';
+          const sourceUploadPath = fromSystem
+            ? resolve(cfg.files.systemUpload)
             : cfg.files.upload;
-          generatedInvoices = prepareSunpureSOUploadFile(cfg.files.upload, cap, cap ? singleUploadPath : undefined) || [];
+          const cap = Number.isInteger(cfg.invoiceCount) && cfg.invoiceCount > 0 ? cfg.invoiceCount : null;
+          // When changeStoreForAll === 'YES', force all invoices onto the single commonStore.
+          const storeOverride = String(cfg.changeStoreForAll).toUpperCase() === 'YES' ? cfg.commonStore : null;
+          // Write the prepared file to a runtime copy whenever the source must not be mutated:
+          // capping rows, forcing a common store, or reading from a system path.
+          singleUploadPath = (cap || storeOverride || fromSystem)
+            ? resolve(process.cwd(), 'test-data/runtime/sunpure_so_upload.csv')
+            : sourceUploadPath;
+          const outPath = singleUploadPath !== sourceUploadPath ? singleUploadPath : undefined;
+          generatedInvoices = prepareSunpureSOUploadFile(sourceUploadPath, cap, outPath, storeOverride) || [];
         }
       });
 

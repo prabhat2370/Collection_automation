@@ -135,7 +135,7 @@ function generateRandomSunpureInvoiceNo() {
  *   Pass a runtime path when capping so the source fixture keeps its full row count.
  * @returns {string[]} unique invoice numbers generated, in row order
  */
-export function prepareSunpureSOUploadFile(filePath, invoiceCount, outPath) {
+export function prepareSunpureSOUploadFile(filePath, invoiceCount, outPath, storeOverride = null) {
     const text = readFileSync(filePath, 'utf8');
     const eol = text.includes('\r\n') ? '\r\n' : '\n';
     let lines = text.split(/\r?\n/);
@@ -144,6 +144,21 @@ export function prepareSunpureSOUploadFile(filePath, invoiceCount, outPath) {
     const headers = splitCsvLine(lines[0]).map(h => h.replace(/^"|"$/g, '').trim().toLowerCase());
     const colIdx = headers.findIndex(h => h === 'sales invoice no');
     if (colIdx < 0) throw new Error(`"Sales Invoice No" column not found in: ${filePath}`);
+
+    // When storeOverride is set, force every invoice row onto a single store by rewriting the
+    // store-identity columns (name + the three code columns + GSTIN). The store is matched/created
+    // by its Customer Code, so overriding the codes is what actually collapses all invoices onto
+    // one store; name/GSTIN are set too so the row is internally consistent.
+    let storeCols = null;
+    if (storeOverride && storeOverride.code) {
+        storeCols = {
+            name:        headers.findIndex(h => h === 'customer name'),
+            companyCode: headers.findIndex(h => h === 'company customer code'),
+            distrCode:   headers.findIndex(h => h === 'distr customer code'),
+            custCode:    headers.findIndex(h => h === 'customer code'),
+            gst:         headers.findIndex(h => h === 'customer gstin'),
+        };
+    }
 
     // Optionally cap to the first N non-empty data rows (one invoice per row).
     const limit = Number.isInteger(invoiceCount) && invoiceCount > 0 ? invoiceCount : null;
@@ -171,12 +186,22 @@ export function prepareSunpureSOUploadFile(filePath, invoiceCount, outPath) {
         seen.add(inv);
         const fields = splitCsvLine(line);
         fields[colIdx] = inv;
+        if (storeCols) {
+            if (storeCols.companyCode >= 0) fields[storeCols.companyCode] = storeOverride.code;
+            if (storeCols.distrCode >= 0)   fields[storeCols.distrCode]   = storeOverride.code;
+            if (storeCols.custCode >= 0)    fields[storeCols.custCode]    = storeOverride.code;
+            if (storeCols.name >= 0 && storeOverride.name) fields[storeCols.name] = storeOverride.name;
+            if (storeCols.gst >= 0 && storeOverride.gst)   fields[storeCols.gst]  = storeOverride.gst;
+        }
         assigned.push(inv);
         return fields.join(',');
     });
     const target = outPath || filePath;
     writeFileSync(target, newLines.join(eol));
-    console.log(`[SOPrep][Sunpure] (${assigned.length} rows${limit ? `, capped to ${limit}` : ''}) → ${target}: [${assigned.join(', ')}]`);
+    const storeNote = storeCols
+        ? `, store→ALL='${storeOverride.name || ''}' (${storeOverride.code})`
+        : '';
+    console.log(`[SOPrep][Sunpure] (${assigned.length} rows${limit ? `, capped to ${limit}` : ''}${storeNote}) → ${target}: [${assigned.join(', ')}]`);
     return assigned;
 }
 

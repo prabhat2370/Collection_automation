@@ -7,6 +7,15 @@ import { resolve } from 'path';
 import { PAYMENT_MODES } from '../../test-data/cashier.js';
 import { SEG } from '../../test-data/seg.js';
 
+// A PAYMENT_MODES.* value is a single 'V'/'R'/'NA'/'' (uniform, same decision for every row) or a
+// per-row list — either a real array (['V','R','V']) or a '/'-separated string ('V/R/V'). True if
+// ANY row needs a bank-statement insert — i.e. contains at least one 'V' or 'R' token, not just an
+// exact uniform match.
+function needsBankStatementInsert(mode) {
+  const tokens = Array.isArray(mode) ? mode : (typeof mode === 'string' ? mode.split('/') : []);
+  return tokens.some(token => String(token).trim() === 'V' || String(token).trim() === 'R');
+}
+
 test.describe.configure({ mode: 'serial' });
 
 test.describe('Cashier Verification Flow', () => {
@@ -71,7 +80,7 @@ test.describe('Cashier Verification Flow', () => {
       await cashVerificationPage.runChequeFlow();
     });
 
-    if (PAYMENT_MODES.upi !== 'NA') {
+    if (needsBankStatementInsert(PAYMENT_MODES.upi)) {
       await test.step('Insert UPI bank statement (DB) and reload', async () => {
         await cashVerificationPage.runUPIInsert();
         await page.reload();
@@ -82,7 +91,7 @@ test.describe('Cashier Verification Flow', () => {
       await cashVerificationPage.runUPIFlow();
     });
 
-    if (PAYMENT_MODES.neft !== 'NA') {
+    if (needsBankStatementInsert(PAYMENT_MODES.neft)) {
       await test.step('Insert NEFT bank statement (DB) and reload', async () => {
         await cashVerificationPage.runNEFTInsert();
         await page.reload();

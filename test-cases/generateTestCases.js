@@ -1547,6 +1547,116 @@ tc('TC_OBCE_025', 'OBC Elimination', '', 'Verify zero-amount post-check: DB has 
     'No rows added',
     'Negative', 'Medium'),
 
+// ── Britannia credit-note rounding tolerance (RIP0-7974) ─────────────────────
+// Root cause: collection-side upload sums all eligible credit notes for an invoice in
+// full precision and rounds the TOTAL once; Orders instead rounds each individual credit
+// note first and then sums the rounded values — so a multi-row credit note for the same
+// invoice can legitimately land ±1 away from Orders' credit_note_amount. Fix is either to
+// round each adjustment row individually before summing (to match Orders), or to accept a
+// -1..+1 tolerance on the aggregate, same as the no-bill-back tolerance in RIP0-7868.
+// Diagnostic query from the ticket (Prajwal Kedlaya, 2026-10-05):
+//   SELECT o.invoice_no, o.fc_id, o.brand_id,
+//          CAST(JSON_UNQUOTE(JSON_EXTRACT(o.extra_info, '$.invoice_amount_info.credit_note')) AS DECIMAL(15,2)) AS credit_note_amount,
+//          SUM(a.adjusted_amount) AS sum_adjusted_amount, COUNT(a.id) AS num_adjustment_rows
+//   FROM Orders o JOIN obc_adjustment_data a
+//     ON a.adjusted_bill_no = o.invoice_no AND a.fc_id = o.fc_id AND a.brand_id = o.brand_id
+//   WHERE a.brand_id IN (4,31,40,41,42) AND a.created_at >= '2026-08-04'
+//   GROUP BY o.invoice_no, o.fc_id, o.brand_id, credit_note_amount
+//   HAVING credit_note_amount > 0 AND ABS(SUM(a.adjusted_amount) - credit_note_amount) <= 1.0
+// brand_id 4 = BRIT: Britannia, 42 = BRITIS: Britannia Institution (both in test-data/creditUpload.js);
+// 31, 40, 41 are additional Britannia-family brand_ids named in the ticket's own query but not
+// yet mapped to a brand/FC pair in this repo — confirm with dev/Jira before automating those.
+tc('TC_OBCE_026', 'OBC Elimination', 'RIP0-7974', 'Verify multi-row credit note sum exactly matches Orders credit_note_amount (diff=0)',
+    'Invoice with 2+ obc_adjustment_data rows, SUM(adjusted_amount) == credit_note_amount',
+    '1. Upload Credit Adjustment file with multiple rows for one invoice\n2. Run ticket diagnostic query (or getObcAdjustmentEntry per row) \n3. Compute SUM(adjusted_amount) vs Orders credit_note_amount',
+    'Adjustment accepted; outstanding reduced by the full matched amount',
+    'Functional', 'Critical'),
+
+tc('TC_OBCE_027', 'OBC Elimination', 'RIP0-7974', 'Verify multi-row credit note sum within tolerance (diff = -1) is allowed',
+    'SUM(adjusted_amount) = credit_note_amount - 1',
+    '1. Upload Credit Adjustment file whose per-row rounding leaves the aggregate ₹1 short of credit_note_amount\n2. Run diagnostic query',
+    'Adjustment accepted (within -1..+1 tolerance, matches RIP0-7868 pattern)',
+    'Functional', 'Critical'),
+
+tc('TC_OBCE_028', 'OBC Elimination', 'RIP0-7974', 'Verify multi-row credit note sum within tolerance (diff = +1) is allowed',
+    'SUM(adjusted_amount) = credit_note_amount + 1',
+    '1. Upload Credit Adjustment file whose aggregate rounds ₹1 over credit_note_amount\n2. Run diagnostic query',
+    'Adjustment accepted — this is the specific case this ticket adds (previously rejected due to sum-then-round vs round-then-sum mismatch)',
+    'Functional', 'Critical'),
+
+tc('TC_OBCE_029', 'OBC Elimination', 'RIP0-7974', 'Verify multi-row credit note sum beyond tolerance (|diff| >= 2) is rejected',
+    'SUM(adjusted_amount) = credit_note_amount ± 2',
+    '1. Upload Credit Adjustment file with an aggregate rounding diff of 2 or more\n2. Run diagnostic query',
+    'Adjustment rejected / flagged as mismatch — tolerance window does not extend beyond ±1',
+    'Negative', 'High'),
+
+tc('TC_OBCE_030', 'OBC Elimination', 'RIP0-7974', 'Verify each credit note row is individually rounded before aggregation (if fix implemented as round-then-sum)',
+    'N credit note rows with fractional paise amounts for one invoice',
+    '1. Upload file with rows whose individual rounding differs from rounding the raw sum\n2. Compare per-row rounded total vs Orders credit_note_amount',
+    'Per-row rounding (matching Orders\' own logic) is used, not a single round-the-aggregate step',
+    'Functional', 'High'),
+
+tc('TC_OBCE_031', 'OBC Elimination', 'RIP0-7974', 'Verify fix scoped only to Britannia-family brand_ids (4, 31, 40, 41, 42)',
+    'brand_id IN (4,31,40,41,42)',
+    '1. Re-run ticket diagnostic query across all 5 brand_ids\n2. Assert no remaining rows with ABS(diff) > 1 for brand_id 4/42 (mapped brands)\n3. Flag 31/40/41 for confirmation — not yet in test-data/creditUpload.js',
+    'No out-of-tolerance mismatches remain for the mapped Britannia brands; unmapped brand_ids (31/40/41) called out for follow-up',
+    'Functional', 'Medium'),
+
+tc('TC_OBCE_032', 'OBC Elimination', 'RIP0-7974', 'Regression — non-Britannia brand (e.g. Sunpure/Godrej) rounding behavior unchanged',
+    'activeBrand: sunpure or godrej, single-row credit note with diff = 0/±1',
+    '1. Run the existing OBC Elimination flow (TC_OBCE_001-019) for a non-Britannia brand\n2. Confirm outstanding/adjustment behavior matches pre-fix baseline',
+    'Britannia-specific rounding fix does not alter behavior for other brands',
+    'Negative', 'Medium'),
+
+// ── Cash Discount mirrors of TC_OBCE_026-032 ──────────────────────────────────
+// RIP0-7974's text and diagnostic SQL only name credit notes — Cash Discount isn't
+// explicitly in scope. These extrapolate the same sum-then-round vs round-then-sum
+// tolerance logic to Cash Discount uploads (a parallel upload type in the same Adapter
+// Uploads flow) on the assumption the aggregation bug is upload-type-agnostic.
+// CONFIRM WITH DEV whether Cash Discount is actually affected before treating these as
+// required — flagged via TC_OBCE_033's own verification step.
+tc('TC_OBCE_033', 'OBC Elimination', 'RIP0-7974', '[Cash Discount] Verify multi-row cash discount sum exactly matches Orders value (diff=0)',
+    'Invoice with 2+ cash-discount adjustment rows, SUM(adjusted_amount) == orders cash discount value; confirm Cash Discount is in scope for this ticket',
+    '1. Confirm with dev whether Cash Discount uploads share the credit-note rounding logic\n2. Upload Cash Discount file with multiple rows for one invoice\n3. Compute SUM(adjusted_amount) vs Orders cash discount value',
+    'Adjustment accepted; outstanding reduced by the full matched amount (mirrors TC_OBCE_026)',
+    'Functional', 'Medium'),
+
+tc('TC_OBCE_034', 'OBC Elimination', 'RIP0-7974', '[Cash Discount] Verify multi-row sum within tolerance (diff = -1) is allowed',
+    'SUM(adjusted_amount) = cash discount value - 1',
+    '1. Upload Cash Discount file whose per-row rounding leaves the aggregate ₹1 short\n2. Verify outcome',
+    'Adjustment accepted within -1..+1 tolerance (mirrors TC_OBCE_027)',
+    'Functional', 'Medium'),
+
+tc('TC_OBCE_035', 'OBC Elimination', 'RIP0-7974', '[Cash Discount] Verify multi-row sum within tolerance (diff = +1) is allowed',
+    'SUM(adjusted_amount) = cash discount value + 1',
+    '1. Upload Cash Discount file whose aggregate rounds ₹1 over the cash discount value\n2. Verify outcome',
+    'Adjustment accepted — Cash Discount counterpart of this ticket\'s core +1 case (mirrors TC_OBCE_028)',
+    'Functional', 'Medium'),
+
+tc('TC_OBCE_036', 'OBC Elimination', 'RIP0-7974', '[Cash Discount] Verify multi-row sum beyond tolerance (|diff| >= 2) is rejected',
+    'SUM(adjusted_amount) = cash discount value ± 2',
+    '1. Upload Cash Discount file with an aggregate rounding diff of 2 or more\n2. Verify outcome',
+    'Adjustment rejected / flagged as mismatch (mirrors TC_OBCE_029)',
+    'Negative', 'Medium'),
+
+tc('TC_OBCE_037', 'OBC Elimination', 'RIP0-7974', '[Cash Discount] Verify each row is individually rounded before aggregation',
+    'N cash discount rows with fractional paise amounts for one invoice',
+    '1. Upload file with rows whose individual rounding differs from rounding the raw sum\n2. Compare per-row rounded total vs Orders value',
+    'Per-row rounding used, not a single round-the-aggregate step (mirrors TC_OBCE_030)',
+    'Functional', 'Low'),
+
+tc('TC_OBCE_038', 'OBC Elimination', 'RIP0-7974', '[Cash Discount] Verify fix scoped only to Britannia-family brand_ids (4, 31, 40, 41, 42)',
+    'brand_id IN (4,31,40,41,42)',
+    '1. Repeat the ticket diagnostic query against Cash Discount adjustment rows across all 5 brand_ids\n2. Flag 31/40/41 for confirmation (not yet mapped in test-data/creditUpload.js)',
+    'No out-of-tolerance mismatches remain for mapped brands; unmapped brand_ids called out (mirrors TC_OBCE_031)',
+    'Functional', 'Low'),
+
+tc('TC_OBCE_039', 'OBC Elimination', 'RIP0-7974', '[Cash Discount] Regression — non-Britannia brand Cash Discount behavior unchanged',
+    'activeBrand: sunpure or godrej, single-row cash discount with diff = 0/±1',
+    '1. Run the existing Cash Discount upload flow for a non-Britannia brand\n2. Confirm behavior matches pre-fix baseline',
+    'Britannia-specific rounding fix does not alter Cash Discount behavior for other brands (mirrors TC_OBCE_032)',
+    'Negative', 'Low'),
+
 // ════════════════════════════════════════════════════════════════════════════
 // 14. SEG CA (Credit Adjustment Allocation)
 // ════════════════════════════════════════════════════════════════════════════
@@ -1659,7 +1769,149 @@ tc('TC_SEGCA_018', 'SEG CA', '', 'Verify Sunpure invoice count matches soInvoice
     'Functional', 'Critical'),
 
 // ════════════════════════════════════════════════════════════════════════════
-// 15. SMOKE TEST (E2E orchestration)
+// 15. GODREJ CREDIT ADJUSTMENT / CASH DISCOUNT — ALREADY-CONSIDERED CHECK (RIP0-7976)
+// ════════════════════════════════════════════════════════════════════════════
+// New validation: for Godrej orders, when a Credit Adjustment or Cash Discount file is
+// uploaded, the system compares the uploaded amount against Orders.extra_info.cn_amount
+// (the credit note value already baked into the invoice at invoicing time). An exact match
+// means this credit was already accounted for — upload must be rejected rather than double
+// -applying it. Confirmed observed in QA (Vipul, 2026-10-14):
+//   "This adjustment amount was already considered during invoicing for invoice
+//    G1860821002577 (extra_info.cn_amount=400). Please contact tech support."
+// Ticket title scopes this to "Godrej all brand (GT, MT, just Godrej)". Only
+// GDJGT: Godrej GT (fc=BYTI: Byrathi, fcId=1, brandId=3) exists in
+// test-data/creditUpload.js today — Godrej MT and plain "Godrej" brand/FC pairs are not yet
+// mapped in this repo; TC_GDJCA_006 flags that gap rather than guessing IDs.
+// Process note: per Prabhat Kumar Singh's comment (2026-10-13), no UT doc was attached before
+// this moved to QA — confirm one exists (exact match definition, rounding/tolerance interplay
+// with RIP0-7974, which upload types are covered) before signing off (see TC_GDJCA_010).
+tc('TC_GDJCA_001', 'Godrej Credit Adjustment', 'RIP0-7976', 'Verify precondition: Orders.extra_info.cn_amount is populated for a Godrej GT invoice',
+    'fc=BYTI: Byrathi, brand=GDJGT: Godrej GT, fcId=1, brandId=3',
+    '1. Query Orders for a Godrej GT invoice\n2. Read extra_info.cn_amount',
+    'cn_amount present and > 0 for the chosen invoice (required setup for TC_GDJCA_002/003/007/008)',
+    'Smoke', 'Critical'),
+
+tc('TC_GDJCA_002', 'Godrej Credit Adjustment', 'RIP0-7976', 'Verify Credit Adjustment upload is rejected when amount exactly matches extra_info.cn_amount',
+    'Upload amount == extra_info.cn_amount (e.g. ₹400 for invoice G1860821002577)',
+    '1. Build Credit Adjustment file with adjustment amount == cn_amount for the invoice\n2. Upload via Adapter Uploads (Type=Credit Adjustment, FC=BYTI, Brand=GDJGT)\n3. Submit',
+    'Error shown: "This adjustment amount was already considered during invoicing for invoice {invoice_no} (extra_info.cn_amount={amount}). Please contact tech support."; no obc_adjustment_data row created',
+    'Negative', 'Critical'),
+
+tc('TC_GDJCA_003', 'Godrej Credit Adjustment', 'RIP0-7976', 'Verify Cash Discount upload is rejected when amount exactly matches extra_info.cn_amount',
+    'Upload Type: Cash Discount, amount == extra_info.cn_amount',
+    '1. Build Cash Discount file with amount == cn_amount for the invoice\n2. Upload via Adapter Uploads (Type=Cash Discount, FC=BYTI, Brand=GDJGT)\n3. Submit',
+    'Same "already considered during invoicing" error as Credit Adjustment (ticket explicitly covers both upload types); no duplicate entry created',
+    'Negative', 'Critical'),
+
+tc('TC_GDJCA_004', 'Godrej Credit Adjustment', 'RIP0-7976', 'Verify Credit Adjustment upload proceeds normally when amount differs from extra_info.cn_amount',
+    'Upload amount != extra_info.cn_amount (no prior credit note overlap)',
+    '1. Upload Credit Adjustment file with an amount distinct from cn_amount\n2. Submit\n3. Verify via getObcAdjustmentEntry',
+    'Adjustment accepted; outstanding reduced as normal (positive/control case — new check does not false-positive)',
+    'Functional', 'Critical'),
+
+tc('TC_GDJCA_005', 'Godrej Credit Adjustment', 'RIP0-7976', 'Verify invoices with extra_info.cn_amount = 0 / null are never blocked',
+    'cn_amount IS NULL or 0',
+    '1. Pick/seed a Godrej invoice with no credit note considered at invoicing\n2. Upload a Credit Adjustment for it\n3. Submit',
+    'Upload proceeds normally — the already-considered check only triggers when cn_amount is a real, matching value',
+    'Negative', 'High'),
+
+tc('TC_GDJCA_006', 'Godrej Credit Adjustment', 'RIP0-7976', 'Verify check applies across all Godrej brand variants (GT / MT / plain Godrej)',
+    'GDJGT: Godrej GT (mapped, fcId=1/brandId=3); Godrej MT and plain "Godrej" — brand/FC ids TBD',
+    '1. Repeat TC_GDJCA_002 for Godrej MT brand config\n2. Repeat for plain "Godrej" brand config\n3. Flag missing configs for dev/PM to supply FC + brand_id',
+    'Same already-considered rejection behavior holds for every Godrej brand/channel named in the ticket title',
+    'Functional', 'High'),
+
+tc('TC_GDJCA_007', 'Godrej Credit Adjustment', 'RIP0-7976', 'Verify rejection error text interpolates the correct invoice number and cn_amount',
+    'Error template: "...already considered during invoicing for invoice {invoice_no} (extra_info.cn_amount={amount})..."',
+    '1. Trigger TC_GDJCA_002 for two different invoices with different cn_amounts\n2. Read the displayed error text for each',
+    'invoice_no and cn_amount in the error exactly match the triggering invoice/amount each time (not a stale/templated value)',
+    'Functional', 'Medium'),
+
+tc('TC_GDJCA_008', 'Godrej Credit Adjustment', 'RIP0-7976', 'Verify a near-match (not exact) does NOT trigger the already-considered block',
+    'Upload amount = cn_amount ± 1 (or ± 0.01)',
+    '1. Upload Credit Adjustment with an amount close to but not equal to cn_amount\n2. Submit',
+    'Upload proceeds (check is an exact match per ticket wording "if credit note value is matching") — confirm with dev whether RIP0-7974-style tolerance should ever apply here, since an off-by-1 case could otherwise be mistaken for either ticket\'s logic',
+    'Negative', 'Medium'),
+
+tc('TC_GDJCA_009', 'Godrej Credit Adjustment', 'RIP0-7976', 'Regression — non-Godrej brands unaffected by the new already-considered check',
+    'activeBrand: britannia / sunpure / nestle / dabur / hulsamadhan',
+    '1. Run existing TC_OBCE_001-019 flow for a non-Godrej brand with an adjustment amount that happens to equal that invoice\'s own extra_info value (if present)\n2. Confirm no new rejection appears for other brands',
+    'Already-considered check is scoped to Godrej only; other brands\' upload behavior is unchanged',
+    'Negative', 'High'),
+
+tc('TC_GDJCA_010', 'Godrej Credit Adjustment', 'RIP0-7976', 'Process gap — confirm Unit Test documentation exists before QA sign-off',
+    'Per Prabhat Kumar Singh comment (2026-10-13): "No UT doc attached before moving to QA"',
+    '1. Request UT doc from dev (Vikas Sharma / Monender Singh Chauhan) covering exact-match definition, scope (GT/MT/plain, credit adjustment + cash discount), and interplay with RIP0-7974 tolerance\n2. Do not close ticket until received and reviewed',
+    'UT doc obtained and reconciled with TC_GDJCA_001-009 before ticket moves to Done',
+    'Functional', 'Medium'),
+
+// ── Cash Discount mirrors of TC_GDJCA_001-010 ─────────────────────────────────
+// Unlike RIP0-7974, Cash Discount is EXPLICITLY named in RIP0-7976's own description
+// ("when credit note or cash discount file is uploaded") — these are in-scope, not an
+// extrapolation. TC_GDJCA_003 already covers the core Cash Discount rejection case; it's
+// referenced rather than duplicated below.
+tc('TC_GDJCA_011', 'Godrej Credit Adjustment', 'RIP0-7976', '[Cash Discount] Verify precondition: Orders.extra_info.cn_amount is populated for a Godrej GT invoice',
+    'Same precondition as TC_GDJCA_001, scoped to the invoice used for Cash Discount upload tests',
+    '1. Query Orders for a Godrej GT invoice intended for Cash Discount upload\n2. Read extra_info.cn_amount',
+    'cn_amount present and > 0 (setup for TC_GDJCA_003/012/016/017)',
+    'Smoke', 'Critical'),
+
+tc('TC_GDJCA_012', 'Godrej Credit Adjustment', 'RIP0-7976', '[Cash Discount] Verify upload is rejected when amount exactly matches extra_info.cn_amount (second invoice, confirms it\'s not a one-off)',
+    'Upload amount == extra_info.cn_amount, different invoice than TC_GDJCA_003\'s example (G1860821002577)',
+    '1. Build Cash Discount file with amount == cn_amount for a different Godrej invoice\n2. Upload (Type=Cash Discount, FC=BYTI, Brand=GDJGT)\n3. Submit',
+    'Same "already considered during invoicing" rejection as TC_GDJCA_003, confirming it is not invoice-specific',
+    'Negative', 'High'),
+
+tc('TC_GDJCA_013', 'Godrej Credit Adjustment', 'RIP0-7976', '[Cash Discount] Verify upload proceeds normally when amount differs from extra_info.cn_amount',
+    'Upload amount != extra_info.cn_amount',
+    '1. Upload Cash Discount file with an amount distinct from cn_amount\n2. Submit\n3. Verify via DB query',
+    'Adjustment accepted; outstanding reduced as normal (mirrors TC_GDJCA_004)',
+    'Functional', 'High'),
+
+tc('TC_GDJCA_014', 'Godrej Credit Adjustment', 'RIP0-7976', '[Cash Discount] Verify invoices with extra_info.cn_amount = 0 / null are never blocked',
+    'cn_amount IS NULL or 0',
+    '1. Pick/seed a Godrej invoice with no credit note considered at invoicing\n2. Upload a Cash Discount for it\n3. Submit',
+    'Upload proceeds normally (mirrors TC_GDJCA_005)',
+    'Negative', 'Medium'),
+
+tc('TC_GDJCA_015', 'Godrej Credit Adjustment', 'RIP0-7976', '[Cash Discount] Verify check applies across all Godrej brand variants (GT / MT / plain Godrej)',
+    'GDJGT: Godrej GT (mapped); Godrej MT and plain "Godrej" — brand/FC IDs TBD',
+    '1. Repeat TC_GDJCA_012 for Godrej MT and plain "Godrej" configs once available',
+    'Same Cash Discount rejection behavior holds for every Godrej brand/channel (mirrors TC_GDJCA_006)',
+    'Functional', 'Medium'),
+
+tc('TC_GDJCA_016', 'Godrej Credit Adjustment', 'RIP0-7976', '[Cash Discount] Verify rejection error text interpolates the correct invoice number and cn_amount',
+    'Error template: "...invoice {invoice_no} (extra_info.cn_amount={amount})..."',
+    '1. Trigger TC_GDJCA_012 for two different invoices with different cn_amounts\n2. Read the displayed error text for each',
+    'invoice_no and cn_amount in the error match the triggering invoice/amount each time (mirrors TC_GDJCA_007)',
+    'Functional', 'Low'),
+
+tc('TC_GDJCA_017', 'Godrej Credit Adjustment', 'RIP0-7976', '[Cash Discount] Verify a near-match (not exact) does NOT trigger the already-considered block',
+    'Upload amount = cn_amount ± 1 (or ± 0.01)',
+    '1. Upload Cash Discount with an amount close to but not equal to cn_amount\n2. Submit',
+    'Upload proceeds — exact-match-only behavior holds for Cash Discount too (mirrors TC_GDJCA_008)',
+    'Negative', 'Medium'),
+
+tc('TC_GDJCA_018', 'Godrej Credit Adjustment', 'RIP0-7976', '[Cash Discount] Regression — non-Godrej brands unaffected by the Cash Discount check',
+    'activeBrand: britannia / sunpure / nestle / dabur / hulsamadhan',
+    '1. Upload a Cash Discount file for a non-Godrej brand with an amount matching that invoice\'s own extra_info value (if present)\n2. Confirm no new rejection appears',
+    'Already-considered check on Cash Discount uploads is scoped to Godrej only (mirrors TC_GDJCA_009)',
+    'Negative', 'Medium'),
+
+tc('TC_GDJCA_019', 'Godrej Credit Adjustment', 'RIP0-7976', '[Cash Discount] Process gap — confirm UT doc explicitly covers the Cash Discount upload path',
+    'Per Prabhat Kumar Singh comment (2026-10-13): "No UT doc attached before moving to QA"',
+    '1. When requesting the UT doc (TC_GDJCA_010), explicitly confirm it documents the Cash Discount path, not just Credit Adjustment',
+    'UT doc covers both upload types before ticket moves to Done (mirrors TC_GDJCA_010)',
+    'Functional', 'Low'),
+
+tc('TC_GDJCA_020', 'Godrej Credit Adjustment', 'RIP0-7976', '[Cash Discount] Verify Credit Adjustment and Cash Discount already-considered checks are independent per invoice',
+    'Same invoice, one upload type already accepted (amount != cn_amount), then the other upload type attempted with amount == cn_amount',
+    '1. Upload an accepted Credit Adjustment for an invoice (amount != cn_amount)\n2. Then upload a Cash Discount for the SAME invoice with amount == cn_amount\n3. Submit',
+    'Cash Discount upload is still correctly rejected on its own merits — the prior unrelated Credit Adjustment does not mask or interfere with the cn_amount check (new interaction case, no TC_OBCE/TC_GDJCA equivalent)',
+    'Functional', 'Medium'),
+
+// ════════════════════════════════════════════════════════════════════════════
+// 16. SMOKE TEST (E2E orchestration)
 // ════════════════════════════════════════════════════════════════════════════
 tc('TC_SMOKE_001', 'Smoke Test', '', 'Verify Login step (navigate + email + password + click)',
     'admin@ripplr.in / M@ver!ck',

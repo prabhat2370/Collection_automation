@@ -4,10 +4,10 @@ import { SEG } from './seg.js';
 
 // Used during RFC verification flow (SEG.verificationType === 'D')
 export const RFC_PAYMENT_MODES = {
-    cash: '',
-    cheque: '',
-    upi: '',
-    neft: 'V',
+    cash: ['V'],             // 1 cash row in RFC_COLLECTION.cash
+    cheque: ['V','V','V','V'], // 1 cheque rows in RFC_COLLECTION.cheque
+    upi: ['V','V','V','V'],              // 1 upi row in RFC_COLLECTION.upi
+    neft: ['V','V','V','V'],        // 3 neft rows in RFC_COLLECTION.neft
 };
 
 // Used during Collection verification flow (SEG.verificationType === 'S')
